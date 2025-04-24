@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Expanded Procedural Sound Creation Tool</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #222;
+        color: #eee;
+      }
+      #controlPanel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 100;
+        background: rgba(0,0,0,0.9);
+        padding: 15px;
+        border-radius: 8px;
+        max-width: 350px;
+        overflow-y: auto;
+        max-height: 90vh;
+      }
+      fieldset {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #555;
+      }
+      label {
+        display: block;
+        margin-top: 5px;
+      }
+      input, select, button {
+        margin-top: 5px;
+        width: 100%;
+        padding: 5px;
+        font-size: 0.9em;
+      }
+      h2 {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controlPanel">
+      <h2>Procedural Sound Creator</h2>
+      <!-- Sound Type Selector -->
+      <form id="soundForm">
+        <fieldset>
+          <legend>Sound Type</legend>
+          <label for="soundType">Select Sound Type:</label>
+          <select id="soundType" name="soundType">
+            <option value="wind">Wind Blowing</option>
+            <option value="leaves">Tree Leaves Rustling</option>
+            <option value="fire">Ambient Fire Burning</option>
+            <option value="footsteps">Footsteps on Surface</option>
+          </select>
+        </fieldset>
+
+        <!-- WIND Specific Parameters -->
+        <fieldset id="windParams">
+          <legend>Wind Parameters</legend>
+          <label for="windSpeed">Wind Speed (0–100):</label>
+          <input type="number" id="windSpeed" name="windSpeed" min="0" max="100" value="40">
+          <label for="windGustiness">Gustiness (0.0–1.0):</label>
+          <input type="number" id="windGustiness" name="windGustiness" step="0.1" min="0" max="1" value="0.5">
+          <label for="windDirection">Wind Direction:</label>
+          <select id="windDirection" name="windDirection">
+            <option value="N">North</option>
+            <option value="NE">North-East</option>
+            <option value="E">East</option>
+            <option value="SE">South-East</option>
+            <option value="S">South</option>
+            <option value="SW">South-West</option>
+            <option value="W">West</option>
+            <option value="NW">North-West</option>
+          </select>
+          <label for="turbulence">Turbulence (0.0–1.0):</label>
+          <input type="number" id="turbulence" name="turbulence" step="0.1" min="0" max="1" value="0.3">
+          <label for="groundMaterial">Ground Material:</label>
+          <select id="groundMaterial" name="groundMaterial">
+            <option value="grass">Grass</option>
+            <option value="snow">Snow</option>
+            <option value="rock">Rock</option>
+            <option value="sand">Sand</option>
+          </select>
+        </fieldset>
+
+        <!-- LEAVES Specific Parameters -->
+        <fieldset id="leavesParams" style="display:none;">
+          <legend>Leaves Rustling</legend>
+          <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
+          <input type="number" id="rustleIntensity" name="rustleIntensity" step="0.1" min="0" max="1" value="0.5">
+          <label for="leafType">Leaf Type:</label>
+          <select id="leafType" name="leafType">
+            <option value="generic">Generic</option>
+            <option value="oak">Oak</option>
+            <option value="pine">Pine</option>
+            <option value="maple">Maple</option>
+            <option value="birch">Birch</option>
+          </select>
+          <label for="leafDensity">Leaf Density (0–100):</label>
+          <input type="number" id="leafDensity" name="leafDensity" min="0" max="100" step="5" value="50">
+        </fieldset>
+
+        <!-- FIRE Specific Parameters -->
+        <fieldset id="fireParams" style="display:none;">
+          <legend>Ambient Fire</legend>
+          <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
+          <input type="number" id="fireIntensity" name="fireIntensity" step="0.1" min="0" max="1" value="0.5">
+          <label for="crackleFrequency">Crackle Frequency (0–10):</label>
+          <input type="number" id="crackleFrequency" name="crackleFrequency" step="0.5" min="0" max="10" value="5">
+          <label for="flickerSpeed">Flicker Speed (0.0–5.0):</label>
+          <input type="number" id="flickerSpeed" name="flickerSpeed" step="0.1" min="0" max="5" value="1.0">
+          <label for="fuelType">Fuel Type:</label>
+          <select id="fuelType" name="fuelType">
+            <option value="wood">Wood</option>
+            <option value="gas">Gas</option>
+            <option value="charcoal">Charcoal</option>
+          </select>
+          <label for="flameTemp">Flame Temperature:</label>
+          <select id="flameTemp" name="flameTemp">
+            <option value="cool">Cool</option>
+            <option value="neutral">Neutral</option>
+            <option value="warm">Warm</option>
+          </select>
+        </fieldset>
+
+        <!-- FOOTSTEPS Specific Parameters -->
+        <fieldset id="footstepsParams" style="display:none;">
+          <legend>Footsteps</legend>
+          <label for="footstepVolume">Footstep Volume (0.0–1.0):</label>
+          <input type="number" id="footstepVolume" name="footstepVolume" step="0.1" min="0" max="1" value="0.6">
+          <label for="stepFrequency">Step Frequency (steps/minute):</label>
+          <input type="number" id="stepFrequency" name="stepFrequency" min="30" max="200" value="100">
+          <label for="footwearType">Footwear Type:</label>
+          <select id="footwearType" name="footwearType">
+            <option value="sneakers">Sneakers</option>
+            <option value="boots">Boots</option>
+            <option value="sandals">Sandals</option>
+            <option value="barefoot">Barefoot</option>
+          </select>
+          <label for="stepSurface">Surface Type:</label>
+          <select id="stepSurface" name="stepSurface">
+            <option value="grass">Grass</option>
+            <option value="gravel">Gravel</option>
+            <option value="wood">Wood</option>
+            <option value="tile">Tile</option>
+          </select>
+        </fieldset>
+
+        <!-- Global Spatial Parameters (applies to all sound types) -->
+        <fieldset id="spatialParams">
+          <legend>Spatial Parameters</legend>
+          <label for="refDistance">Reference Distance (2–50):</label>
+          <input type="number" id="refDistance" name="refDistance" min="2" max="50" value="5">
+          <label for="rolloff">Rolloff Factor (0.1–5):</label>
+          <input type="number" id="rolloff" name="rolloff" step="0.1" min="0.1" max="5" value="1">
+          <label for="coneInner">Cone Inner Angle (0–180):</label>
+          <input type="number" id="coneInner" name="coneInner" min="0" max="180" value="60">
+          <label for="coneOuter">Cone Outer Angle (0–360):</label>
+          <input type="number" id="coneOuter" name="coneOuter" min="0" max="360" value="180">
+          <label for="coneOuterGain">Cone Outer Gain (0–1):</label>
+          <input type="number" id="coneOuterGain" name="coneOuterGain" step="0.1" min="0" max="1" value="0.1">
+        </fieldset>
+
+        <button type="button" onclick="generateSoundKey()">Generate Sound Key</button>
+      </form>
+
+      <h2>Sound Key:</h2>
+      <p id="soundKeyDisplay" style="font-weight: bold; word-break: break-all;"></p>
+      <button type="button" onclick="playSoundFromUI()">Play Sound</button>
+    </div>
+
+    <!-- Three.js from a CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      ///////////////////////////
+      // Basic Three.js Setup
+      ///////////////////////////
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 1000);
+      camera.position.set(0, 10, 25);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Create an AudioListener and add it to the camera.
+      const audioListener = new THREE.AudioListener();
+      camera.add(audioListener);
+
+      // Global list for moving audio objects for velocity updates.
+      const movingAudioObjects = [];
+      // Global noise buffers cache.
+      const cachedBuffers = {};
+
+      // Expose globals.
+      window.scene = scene;
+      window.audioListener = audioListener;
+
+      ///////////////////////////
+      // UI Behavior: Show/hide fieldsets
+      ///////////////////////////
+      document.getElementById('soundType').addEventListener('change', function() {
+        const type = this.value;
+        document.getElementById('windParams').style.display = (type === 'wind') ? 'block' : 'none';
+        document.getElementById('leavesParams').style.display = (type === 'leaves') ? 'block' : 'none';
+        document.getElementById('fireParams').style.display = (type === 'fire') ? 'block' : 'none';
+        document.getElementById('footstepsParams').style.display = (type === 'footsteps') ? 'block' : 'none';
+      });
+
+      ///////////////////////////
+      // Helper Functions
+      ///////////////////////////
+      // djb2 hash function.
+      function hashString(str) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+          hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        }
+        return hash >>> 0;
+      }
+
+      // Get cached noise buffer or create a new one.
+      function getCachedNoiseBuffer(audioCtx, key, duration) {
+        const cacheKey = key + "_" + duration;
+        if (cachedBuffers[cacheKey]) {
+          return cachedBuffers[cacheKey];
+        } else {
+          const bufferSize = duration * audioCtx.sampleRate;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          cachedBuffers[cacheKey] = buffer;
+          return buffer;
+        }
+      }
+
+      ///////////////////////////
+      // Global Sound Library
+      ///////////////////////////
+      // Map generated sound keys to parameter objects.
+      const soundLibrary = {};
+
+      function generateSoundKey() {
+        const soundType = document.getElementById('soundType').value;
+        const params = { soundType };
+
+        // Gather type-specific parameters.
+        if (soundType === "wind") {
+          params.windSpeed = parseFloat(document.getElementById("windSpeed").value);
+          params.windGustiness = parseFloat(document.getElementById("windGustiness").value);
+          params.windDirection = document.getElementById("windDirection").value;
+          params.turbulence = parseFloat(document.getElementById("turbulence").value);
+          params.groundMaterial = document.getElementById("groundMaterial").value;
+        } else if (soundType === "leaves") {
+          params.rustleIntensity = parseFloat(document.getElementById("rustleIntensity").value);
+          params.leafType = document.getElementById("leafType").value;
+          params.leafDensity = parseFloat(document.getElementById("leafDensity").value);
+        } else if (soundType === "fire") {
+          params.fireIntensity = parseFloat(document.getElementById("fireIntensity").value);
+          params.crackleFrequency = parseFloat(document.getElementById("crackleFrequency").value);
+          params.flickerSpeed = parseFloat(document.getElementById("flickerSpeed").value);
+          params.fuelType = document.getElementById("fuelType").value;
+          params.flameTemp = document.getElementById("flameTemp").value;
+        } else if (soundType === "footsteps") {
+          params.footstepVolume = parseFloat(document.getElementById("footstepVolume").value);
+          params.stepFrequency = parseFloat(document.getElementById("stepFrequency").value);
+          params.footwearType = document.getElementById("footwearType").value;
+          params.stepSurface = document.getElementById("stepSurface").value;
+        }
+
+        // Gather spatial parameters (common to all sounds).
+        params.refDistance = parseFloat(document.getElementById("refDistance").value);
+        params.rolloff = parseFloat(document.getElementById("rolloff").value);
+        params.coneInner = parseFloat(document.getElementById("coneInner").value);
+        params.coneOuter = parseFloat(document.getElementById("coneOuter").value);
+        params.coneOuterGain = parseFloat(document.getElementById("coneOuterGain").value);
+
+        const paramString = JSON.stringify(params);
+        const key = hashString(paramString).toString(16);
+        soundLibrary[key] = params;
+        document.getElementById("soundKeyDisplay").textContent = key;
+      }
+
+      ///////////////////////////
+      // Procedural Synthesis Module
+      ///////////////////////////
+      const SoundGenerator = {
+        // Reusable white noise buffer.
+        createNoiseBuffer: function(audioCtx, duration) {
+          return getCachedNoiseBuffer(audioCtx, "white", duration);
+        },
+
+        // WIND buffer.
+        createWindBuffer: function(audioCtx, params) {
+          const duration = 4;
+          return this.createNoiseBuffer(audioCtx, duration);
+        },
+
+        // LEAVES buffer.
+        createLeavesBuffer: function(audioCtx, params) {
+          const duration = 1;
+          return getCachedNoiseBuffer(audioCtx, "leaves", duration);
+        },
+
+        // FIRE buffer.
+        createFireBuffer: function(audioCtx, params) {
+          const duration = 4;
+          return this.createNoiseBuffer(audioCtx, duration);
+        },
+
+        // FOOTSTEPS buffer.
+        createFootstepsBuffer: function(audioCtx, params) {
+          const duration = 0.3;
+          const bufferSize = duration * audioCtx.sampleRate;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            const t = i / audioCtx.sampleRate;
+            const env = Math.exp(-10 * t);
+            data[i] = Math.sin(2 * Math.PI * 150 * t) * env * (params.footstepVolume || 0.5);
+          }
+          return buffer;
+        }
+      };
+
+      ///////////////////////////
+      // Envelope Scheduling (using exponential ramps)
+      ///////////////////////////
+      function scheduleEnvelope(gainNode, audioCtx, duration, fadeInFraction, fadeOutFraction) {
+        const now = audioCtx.currentTime;
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.setValueAtTime(0, now);
+        const fadeInTime = (fadeInFraction || 0.1) * duration;
+        const fadeOutTime = (fadeOutFraction || 0.2) * duration;
+        gainNode.gain.setTargetAtTime(1.0, now, fadeInTime / 3);
+        gainNode.gain.setValueAtTime(1.0, now + duration - fadeOutTime);
+        gainNode.gain.setTargetAtTime(0, now + duration - fadeOutTime, fadeOutTime / 3);
+      }
+
+      ///////////////////////////
+      // Play Sound from Key (with improved spatial handling)
+      ///////////////////////////
+      /**
+       * Plays a sound based on the stored sound key.
+       * @param {string} soundKey - The unique hash.
+       * @param {THREE.Vector3} orientation - Direction vector.
+       * @param {THREE.Vector3} position - Start position.
+       * @param {Object} options - Additional options (e.g. velocity, duration, fadeIn, fadeOut).
+       */
+      function playSoundFromKey(soundKey, orientation, position, options = {}) {
+        const params = soundLibrary[soundKey];
+        if (!params) {
+          console.error("Unknown sound key:", soundKey);
+          return;
+        }
+        const audioCtx = audioListener.context;
+        const positionalAudio = new THREE.PositionalAudio(audioListener);
+        // Apply spatial parameters.
+        positionalAudio.setRefDistance(params.refDistance || 5);
+        positionalAudio.setRolloffFactor(params.rolloff || 1);
+        positionalAudio.setDistanceModel("exponential");
+        positionalAudio.setDirectionalCone(params.coneInner || 60, params.coneOuter || 180, params.coneOuterGain || 0.1);
+
+        // Choose the sound buffer based on type.
+        let buffer;
+        switch (params.soundType) {
+          case "wind":
+            buffer = SoundGenerator.createWindBuffer(audioCtx, params);
+            break;
+          case "leaves":
+            buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
+            break;
+          case "fire":
+            buffer = SoundGenerator.createFireBuffer(audioCtx, params);
+            break;
+          case "footsteps":
+            buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+            break;
+          default:
+            console.error("Unsupported sound type:", params.soundType);
+            return;
+        }
+        positionalAudio.setBuffer(buffer);
+        if (["wind", "fire"].includes(params.soundType)) {
+          positionalAudio.setLoop(true);
+        }
+
+        // Build processing chain.
+        if (params.soundType === "wind") {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = "bandpass";
+          let cutoff = 200 + (params.windSpeed / 100) * 1800;
+          // Adjust cutoff based on ground material.
+          if (params.groundMaterial === "snow") cutoff += 200;
+          else if (params.groundMaterial === "rock") cutoff -= 200;
+          else if (params.groundMaterial === "sand") cutoff -= 100;
+          filter.frequency.value = cutoff;
+          // LFO modulation on cutoff.
+          const lfo = audioCtx.createOscillator();
+          const lfoGain = audioCtx.createGain();
+          lfo.frequency.value = params.windGustiness * 0.5; // slower for lower gustiness
+          lfoGain.gain.value = 50;
+          lfo.connect(lfoGain);
+          lfoGain.connect(filter.frequency);
+          lfo.start();
+          positionalAudio.disconnect();
+          positionalAudio.source.connect(filter);
+          filter.connect(positionalAudio.gain);
+        } else if (params.soundType === "fire") {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = "lowpass";
+          filter.frequency.value = 500 + (params.fireIntensity || 0.5) * 2500;
+          positionalAudio.disconnect();
+          positionalAudio.source.connect(filter);
+          filter.connect(positionalAudio.gain);
+        }
+
+        // Create an Object3D to attach the audio.
+        const soundObject = new THREE.Object3D();
+        soundObject.position.copy(position);
+        soundObject.lookAt(position.clone().add(orientation));
+        soundObject.add(positionalAudio);
+        scene.add(soundObject);
+
+        // Schedule envelope.
+        const duration = options.duration || 3;
+        scheduleEnvelope(positionalAudio.gain, audioCtx, duration, options.fadeIn, options.fadeOut);
+
+        positionalAudio.play();
+        setTimeout(() => {
+          positionalAudio.stop();
+          scene.remove(soundObject);
+        }, duration * 1000);
+
+        // If velocity provided, add to moving audio list.
+        if (options.velocity) {
+          movingAudioObjects.push({
+            object: soundObject,
+            velocity: options.velocity.clone()
+          });
+        }
+        return positionalAudio;
+      }
+
+      ///////////////////////////
+      // Smooth Position Updates
+      ///////////////////////////
+      function updateMovingAudio(deltaTime) {
+        const damping = 0.1;
+        movingAudioObjects.forEach(item => {
+          const displacement = item.velocity.clone().multiplyScalar(deltaTime);
+          const targetPos = item.object.position.clone().add(displacement);
+          item.object.position.lerp(targetPos, damping);
+        });
+      }
+
+      ///////////////////////////
+      // Animation Loop
+      ///////////////////////////
+      let prevTime = performance.now();
+      function animate() {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - prevTime) / 1000;
+        prevTime = currentTime;
+        updateMovingAudio(deltaTime);
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      ///////////////////////////
+      // Play Sound via UI Button
+      ///////////////////////////
+      function playSoundFromUI() {
+        const key = document.getElementById("soundKeyDisplay").textContent;
+        if (!key) {
+          alert("Please generate a sound key first.");
+          return;
+        }
+        const orientation = new THREE.Vector3(0, 0, -1);
+        const position = new THREE.Vector3(0, 5, 0);
+        const options = {
+          velocity: new THREE.Vector3(0.5, 0, 0),
+          duration: 5,
+          fadeIn: 0.2,
+          fadeOut: 0.3
+        };
+        playSoundFromKey(key, orientation, position, options);
+      }
+    </script>
+  </body>
+</html>
