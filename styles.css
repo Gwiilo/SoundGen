@@ -117,6 +117,7 @@ legend {
   padding: 0 10px;
   font-weight: 500;
   color: var(--accent-blue);
+  width: auto;
 }
 
 label {
@@ -209,6 +210,25 @@ button {
   color: white;
   flex: 1;
   margin-left: 10px;
+  position: relative; /* Required for absolute positioning of the pseudo-element */
+  overflow: hidden; /* Keep the progress indicator within bounds */
+}
+
+.play-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%; /* Will be animated from 0% to 100% */
+  background: rgba(255, 255, 255, 0.25); /* Semi-transparent white overlay */
+  z-index: 0;
+  transition: width 0.1s linear; /* Changed to linear for more accurate timing */
+}
+
+.play-btn span {
+  position: relative;
+  z-index: 1; /* Keep text above the progress indicator */
 }
 
 .play-btn:hover {
@@ -219,6 +239,10 @@ button:disabled {
   background-color: var(--bg-tertiary);
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+button:disabled::before {
+  background: rgba(255, 255, 255, 0.1); /* Lighter overlay when disabled */
 }
 
 /* Key input styling */
@@ -284,6 +308,42 @@ button:disabled {
 /* Custom sound parameters */
 .sound-params {
   transition: all 0.3s ease;
+}
+
+/* Collapsible sections */
+.collapsible-section .collapse-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.collapsible-section .collapse-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+
+.collapsible-section.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 1000px; /* Arbitrary large value */
+  opacity: 1;
+}
+
+.collapsible-section.collapsed .collapsible-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
 }
 
 /* Responsive adjustments */

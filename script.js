@@ -35,6 +35,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const id = slider.id;
     updateParamOutput(id);
   });
+  
+  // Add collapsible functionality to all sections
+  document.querySelectorAll('.collapse-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+      const section = this.closest('.collapsible-section');
+      section.classList.toggle('collapsed');
+      
+      // Stop event propagation to prevent any unintended behavior
+      e.stopPropagation();
+    });
+  });
 });
 
 // Update output values for sliders
@@ -756,8 +767,32 @@ function updateDurationDisplay(value) {
   document.getElementById('durationValue').textContent = value;
 }
 
-// Track active sounds
+// Track active sounds and animation
 let currentlyPlaying = null;
+let playbackStartTime = 0;
+let playbackDuration = 0;
+let playbackAnimationId = null;
+
+// Progress animation using lerp for smoothness
+function updatePlaybackProgress() {
+  const playButton = document.querySelector('.play-btn');
+  
+  // Calculate elapsed time and progress percentage
+  const currentTime = performance.now();
+  const elapsedTime = (currentTime - playbackStartTime) / 1000;
+  const rawProgress = Math.min(elapsedTime / playbackDuration, 1.0);
+  
+  // Update progress width directly using linear timing (more accurate)
+  playButton.style.setProperty('--progress-width', `${rawProgress * 100}%`);
+  
+  // Continue animation if still playing
+  if (rawProgress < 1.0) {
+    playbackAnimationId = requestAnimationFrame(updatePlaybackProgress);
+  } else {
+    // Ensure we reach 100% at the end
+    playButton.style.setProperty('--progress-width', '100%');
+  }
+}
 
 function playSoundFromUI() {
   const key = document.getElementById("soundKeyDisplay").textContent;
@@ -770,12 +805,21 @@ function playSoundFromUI() {
   
   // Get duration from slider
   const duration = parseInt(document.getElementById("playbackDuration").value);
+  playbackDuration = duration; // Store globally for animation
   console.log("Playing sound for", duration, "seconds");
   
   // Update UI to show sound is playing
-  const playButton = document.querySelector('button[onclick="playSoundFromUI()"]');
-  playButton.textContent = "Playing...";
+  const playButton = document.querySelector('.play-btn');
+  playButton.querySelector('span').textContent = "Playing...";
   playButton.disabled = true;
+  
+  // Reset and start progress animation
+  playButton.style.setProperty('--progress-width', '0%');
+  playbackStartTime = performance.now();
+  if (playbackAnimationId) {
+    cancelAnimationFrame(playbackAnimationId);
+  }
+  playbackAnimationId = requestAnimationFrame(updatePlaybackProgress);
   
   // Ensure audio context is running (needed for some browsers)
   if (audioListener.context.state === 'suspended') {
@@ -796,18 +840,49 @@ function playSoundFromUI() {
     currentlyPlaying = playSoundFromKey(key, orientation, position, options);
     document.getElementById('playStatus').textContent = `Playing ${duration} seconds of sound...`;
     
-    // Reset UI after playback completes
+    // Reset UI after playback completes - ensure timing matches the actual duration
     setTimeout(() => {
-      playButton.textContent = "Play Sound";
-      playButton.disabled = false;
-      document.getElementById('playStatus').textContent = "";
-      currentlyPlaying = null;
+      // Cancel any ongoing animation
+      if (playbackAnimationId) {
+        cancelAnimationFrame(playbackAnimationId);
+        playbackAnimationId = null;
+      }
+      
+      // Reset button - ensure progress is at 100% before resetting
+      playButton.style.setProperty('--progress-width', '100%');
+      
+      // Small delay to ensure the progress bar is seen at 100% before resetting
+      setTimeout(() => {
+        playButton.querySelector('span').textContent = "Play Sound";
+        playButton.disabled = false;
+        playButton.style.removeProperty('--progress-width');
+        document.getElementById('playStatus').textContent = "";
+        currentlyPlaying = null;
+      }, 100);
+      
     }, duration * 1000);
     
   } catch (error) {
     console.error("Error playing sound:", error);
-    playButton.textContent = "Play Sound";
+    playButton.querySelector('span').textContent = "Play Sound";
     playButton.disabled = false;
+    playButton.style.removeProperty('--progress-width');
     document.getElementById('playStatus').textContent = "Error playing sound, check console";
+    
+    // Cancel animation on error
+    if (playbackAnimationId) {
+      cancelAnimationFrame(playbackAnimationId);
+      playbackAnimationId = null;
+    }
   }
 }
+
+// Add CSS rule for progress animation - using linear timing for accuracy
+document.head.insertAdjacentHTML('beforeend', `
+  <style>
+    .play-btn::before {
+      width: var(--progress-width, 0%);
+      transition: none; /* Remove transition for precise control */
+    }
+  </style>
+`);
