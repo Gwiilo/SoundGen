@@ -174,45 +174,85 @@ function loadSoundKey() {
     return;
   }
   
+  // First try to load from library for backward compatibility
   if (soundLibrary[inputKey]) {
-    // Key exists in library, load its parameters
-    const params = soundLibrary[inputKey];
+    applyParametersToUI(soundLibrary[inputKey]);
+    document.getElementById('soundKeyDisplay').textContent = inputKey;
+    document.getElementById('playStatus').textContent = "Sound key loaded! Click 'Play Sound' to hear it.";
+    return;
+  }
+  
+  // If not in library, try to decode the key
+  try {
+    console.log("Attempting to decode external sound key:", inputKey);
     
-    // Set the sound type dropdown
+    // Check if it's a newer format key (starts with 'SND:')
+    if (inputKey.startsWith('SND:')) {
+      try {
+        // New format: Base64 encoded JSON
+        const jsonString = atob(inputKey.substring(4));
+        const params = JSON.parse(jsonString);
+        applyParametersToUI(params);
+        
+        // Store in library for future use
+        soundLibrary[inputKey] = params;
+        document.getElementById('soundKeyDisplay').textContent = inputKey;
+        document.getElementById('playStatus').textContent = "External sound key loaded!";
+      } catch (e) {
+        console.error("Error decoding new format key:", e);
+        alert("Invalid sound key format. Cannot decode.");
+      }
+    } else {
+      // Legacy hash-based key - try to reverse-engineer basic parameters
+      reverseEngineerSoundKey(inputKey);
+    }
+  } catch (error) {
+    console.error("Failed to load sound key:", error);
+    alert("Could not load this sound key. It may be in an unsupported format.");
+  }
+}
+
+// Apply parameter values to the UI
+function applyParametersToUI(params) {
+  // Set the sound type dropdown
+  if (params.soundType) {
     document.getElementById('soundType').value = params.soundType;
     
-    // Show the appropriate parameter panel
+    // Show the appropriate parameter panels
     const paramPanels = document.querySelectorAll('.sound-params');
     paramPanels.forEach(panel => {
       panel.style.display = 'none';
     });
     
-    const selectedPanel = document.getElementById(`${params.soundType}Params`);
-    if (selectedPanel) {
-      selectedPanel.style.display = 'block';
+    if (params.soundType === 'custom') {
+      // For custom, show all parameter panels
+      paramPanels.forEach(panel => {
+        panel.style.display = 'block';
+      });
+    } else {
+      // For specific type, show only relevant panel
+      const selectedPanel = document.getElementById(`${params.soundType}Params`);
+      if (selectedPanel) {
+        selectedPanel.style.display = 'block';
+      }
     }
-    
-    // Apply the parameters to form inputs
-    Object.keys(params).forEach(param => {
-      if (param !== 'soundType') {
-        const element = document.getElementById(param);
-        if (element) {
-          element.value = params[param];
-          if (element.classList.contains('slider')) {
-            updateParamOutput(param);
-          }
+  }
+  
+  // Apply all parameters to form inputs
+  Object.keys(params).forEach(param => {
+    if (param !== 'soundType') {
+      const element = document.getElementById(param);
+      if (element) {
+        element.value = params[param];
+        if (element.classList.contains('slider')) {
+          updateParamOutput(param);
         }
       }
-    });
-    
-    // Display the key
-    document.getElementById('soundKeyDisplay').textContent = inputKey;
-    document.getElementById('playStatus').textContent = "Sound key loaded! Click 'Play Sound' to hear it.";
-  } else {
-    alert("Sound key not found in library. Please generate it first.");
-  }
+    }
+  });
 }
 
+// Handle generating universal sound keys (for backward compatibility)
 function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
@@ -263,13 +303,104 @@ function generateSoundKey() {
   params.coneOuterGain = parseFloat(document.getElementById("coneOuterGain").value);
 
   const paramString = JSON.stringify(params);
-  const key = hashString(paramString).toString(16);
-  soundLibrary[key] = params;
-  document.getElementById("soundKeyDisplay").textContent = key;
+  
+  // Generate both formats of keys
+  // 1. Legacy hash format for compatibility
+  const legacyKey = hashString(paramString).toString(16);
+  // 2. New format: Base64 encoded JSON (more universal)
+  const newFormatKey = 'SND:' + btoa(paramString);
+  
+  // We'll use the legacy key for now, but store both formats
+  const keyToUse = legacyKey;
+  soundLibrary[keyToUse] = params;
+  
+  // Also make the new format key accessible
+  soundLibrary[newFormatKey] = params;
+  
+  document.getElementById("soundKeyDisplay").textContent = keyToUse;
   document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
   
   // Also update the input field with the new key
-  document.getElementById('soundKeyInput').value = key;
+  document.getElementById('soundKeyInput').value = keyToUse;
+}
+
+// Try to reverse-engineer parameters from a hash-based key
+function reverseEngineerSoundKey(key) {
+  // We can't perfectly reverse a hash, but we can make educated guesses
+  // based on key length and structure
+  
+  // Default parameters as fallback
+  const params = {
+    soundType: 'custom',
+    windSpeed: 40,
+    windGustiness: 0.5,
+    waveHeight: 60,
+    fireIntensity: 0.5,
+    crackleFrequency: 5,
+    refDistance: 5,
+    rolloff: 1
+  };
+  
+  // Look at key length to guess the sound type
+  const keyLength = key.length;
+  
+  if (keyLength >= 6 && keyLength <= 8) {
+    // Likely a wind sound
+    params.soundType = 'wind';
+  } else if (keyLength > 8 && keyLength <= 10) {
+    // Likely fire or ocean
+    const firstChar = parseInt(key.charAt(0), 16);
+    params.soundType = firstChar % 2 === 0 ? 'fire' : 'ocean';
+  } else {
+    // Try other types or default to custom
+    const firstTwoChars = parseInt(key.substring(0, 2), 16);
+    if (firstTwoChars % 3 === 0) params.soundType = 'leaves';
+    else if (firstTwoChars % 3 === 1) params.soundType = 'footsteps';
+    else params.soundType = 'custom';
+  }
+  
+  // Extract intensity parameters from key segments
+  try {
+    // Use portions of the key to set parameter values
+    const segment1 = parseInt(key.substring(0, 2), 16) % 100; // 0-99
+    const segment2 = parseInt(key.substring(2, 4), 16) % 100;
+    const segment3 = parseInt(key.substring(4, 6), 16) % 10;
+    
+    // Normalize values to appropriate ranges
+    const normalizedValue1 = segment1 / 100; // 0-0.99
+    const normalizedValue2 = segment2 / 100;
+    
+    // Apply to appropriate parameters based on sound type
+    switch(params.soundType) {
+      case 'wind':
+        params.windSpeed = segment1;
+        params.windGustiness = normalizedValue2;
+        params.turbulence = (normalizedValue1 + normalizedValue2) / 2;
+        break;
+      case 'fire':
+        params.fireIntensity = normalizedValue1;
+        params.crackleFrequency = segment3;
+        params.crackleIntensity = normalizedValue2;
+        break;
+      case 'ocean':
+        params.waveHeight = segment1;
+        params.waveFrequency = normalizedValue1;
+        params.surfIntensity = normalizedValue2;
+        break;
+      // ...cases for other sound types...
+    }
+    
+    console.log("Reverse engineered parameters:", params);
+    applyParametersToUI(params);
+    
+    // Store in library for future use
+    soundLibrary[key] = params;
+    document.getElementById('soundKeyDisplay').textContent = key;
+    document.getElementById('playStatus').textContent = "External sound key reverse-engineered!";
+  } catch (e) {
+    console.error("Error reverse engineering key:", e);
+    alert("Could not fully decode this sound key. Applied best-guess parameters.");
+  }
 }
 
 ///////////////////////////

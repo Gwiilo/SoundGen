@@ -232,6 +232,7 @@ button:disabled {
 
 .input-group {
   display: flex;
+  align-items: center; /* Align items vertically */
 }
 
 .input-group input {
@@ -245,6 +246,11 @@ button:disabled {
   border-bottom-left-radius: 0;
   background: var(--accent-blue);
   color: white;
+  height: 37px; /* Match the height of input elements */
+  padding: 0 15px; /* Adjust padding to control width without affecting height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Key display */
