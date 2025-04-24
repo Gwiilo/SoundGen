@@ -1800,8 +1800,9 @@ const allParameters = {
   }
 };
 
-// Store currently selected parameters
+// Store currently selected parameters and category colors
 let selectedParameters = new Set();
+let categoryColors = {};
 
 /**
  * Updates selected parameters based on the sound type
@@ -1878,6 +1879,7 @@ function updateSelectedParametersForType(soundType) {
   
   // Update the visual representation
   updateParameterTags();
+  updateParameterVisibility();
 }
 
 /**
@@ -1887,30 +1889,81 @@ function updateParameterTags() {
   const container = document.getElementById('selectedParameters');
   container.innerHTML = '';
   
+  // Group parameters by category
+  const parametersByCategory = {};
+  
+  // First, organize parameters by category
   selectedParameters.forEach(param => {
-    // Find the parameter name in our categories
+    let categoryKey = null;
     let paramName = param;
+    
+    // Find which category this parameter belongs to
     for (const category in allParameters) {
       if (allParameters[category].params[param]) {
+        categoryKey = category;
         paramName = allParameters[category].params[param];
         break;
       }
     }
     
-    const tag = document.createElement('div');
-    tag.className = 'param-tag';
-    tag.innerHTML = `
-      <span>${paramName}</span>
-      <span class="remove-tag" data-param="${param}">×</span>
-    `;
-    container.appendChild(tag);
+    if (categoryKey) {
+      if (!parametersByCategory[categoryKey]) {
+        parametersByCategory[categoryKey] = [];
+      }
+      parametersByCategory[categoryKey].push({ key: param, name: paramName });
+    }
+  });
+  
+  // Ensure we have colors for each category
+  updateCategoryColors(Object.keys(parametersByCategory));
+  
+  // Now create tags for each category
+  Object.keys(parametersByCategory).forEach(category => {
+    // Create a category group
+    const categoryGroup = document.createElement('div');
+    categoryGroup.className = 'param-category-group';
+    categoryGroup.style.marginBottom = '10px';
     
-    // Add click handler to remove tag
-    tag.querySelector('.remove-tag').addEventListener('click', function() {
-      const paramToRemove = this.getAttribute('data-param');
-      selectedParameters.delete(paramToRemove);
-      updateParameterTags();
+    // Add parameters for this category
+    parametersByCategory[category].forEach(param => {
+      const tag = document.createElement('div');
+      tag.className = 'param-tag';
+      tag.style.backgroundColor = `hsla(${categoryColors[category]}, 85%, 35%, 0.6)`;
+      tag.style.borderColor = `hsl(${categoryColors[category]}, 85%, 45%)`;
+      
+      tag.innerHTML = `
+        <span>${param.name}</span>
+        <span class="remove-tag" data-param="${param.key}">×</span>
+      `;
+      
+      // Add click handler to remove tag
+      tag.querySelector('.remove-tag').addEventListener('click', function() {
+        const paramToRemove = this.getAttribute('data-param');
+        selectedParameters.delete(paramToRemove);
+        updateParameterTags();
+        updateParameterVisibility();
+      });
+      
+      categoryGroup.appendChild(tag);
     });
+    
+    container.appendChild(categoryGroup);
+  });
+}
+
+/**
+ * Assigns colors to categories for visual distinction
+ * @param {Array} categories - List of category keys to assign colors to
+ */
+function updateCategoryColors(categories) {
+  // Assign colors if they don't exist already
+  const totalColors = categories.length;
+  categories.forEach((category, i) => {
+    if (!categoryColors[category]) {
+      // Create evenly distributed hue values using the simplified formula
+      const hue = i / totalColors * 360;
+      categoryColors[category] = hue;
+    }
   });
 }
 
@@ -1946,32 +1999,74 @@ function showParameterModal() {
     const categoryEl = document.createElement('div');
     categoryEl.className = 'param-category';
     
-    let categoryHTML = `<div class="param-category-title">${category.name}</div>`;
-    categoryHTML += '<div class="param-options">';
+    // Check if all parameters in this category are selected
+    const categoryParams = Object.keys(category.params);
+    const allSelected = categoryParams.every(param => selectedParameters.has(param));
+    
+    // Create category header with checkbox
+    let categoryHeader = `
+      <div class="param-category-header">
+        <div class="param-option category-checkbox">
+          <input type="checkbox" id="category-${catKey}" ${allSelected ? 'checked' : ''} data-category="${catKey}">
+          <label for="category-${catKey}" class="param-category-title">${category.name}</label>
+        </div>
+      </div>
+    `;
+    
+    let categoryBody = '<div class="param-options">';
     
     for (const paramKey in category.params) {
       const isChecked = selectedParameters.has(paramKey) ? 'checked' : '';
-      categoryHTML += `
+      categoryBody += `
         <div class="param-option">
-          <input type="checkbox" id="param-${paramKey}" ${isChecked} data-param="${paramKey}">
+          <input type="checkbox" id="param-${paramKey}" ${isChecked} data-param="${paramKey}" data-category="${catKey}">
           <label for="param-${paramKey}">${category.params[paramKey]}</label>
         </div>
       `;
     }
     
-    categoryHTML += '</div>';
-    categoryEl.innerHTML = categoryHTML;
+    categoryBody += '</div>';
+    
+    categoryEl.innerHTML = categoryHeader + categoryBody;
+    
+    // Add color indicator based on category
+    if (categoryColors[catKey]) {
+      const colorIndicator = document.createElement('div');
+      colorIndicator.className = 'category-color-indicator';
+      colorIndicator.style.backgroundColor = `hsl(${categoryColors[catKey]}, 85%, 45%)`;
+      categoryEl.querySelector('.param-category-header').appendChild(colorIndicator);
+    }
+    
     categoriesContainer.appendChild(categoryEl);
+    
+    // Add event handler for category checkbox
+    categoryEl.querySelector(`#category-${catKey}`).addEventListener('change', function() {
+      const isChecked = this.checked;
+      const category = this.getAttribute('data-category');
+      const checkboxes = categoryEl.querySelectorAll(`.param-option input[data-category="${category}"]`);
+      
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+      });
+    });
+    
+    // Add event handlers for parameter checkboxes to update category checkbox
+    const paramCheckboxes = categoryEl.querySelectorAll('.param-option input[type="checkbox"][data-param]');
+    paramCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        updateCategoryCheckbox(catKey, categoryEl);
+      });
+    });
   }
   
-  // Add event handlers
+  // Add event handlers for modal buttons
   document.getElementById('cancelParams').addEventListener('click', function() {
     document.body.removeChild(overlay);
   });
   
   document.getElementById('confirmParams').addEventListener('click', function() {
     // Gather all selected parameters
-    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+    const checkboxes = modal.querySelectorAll('input[type="checkbox"][data-param]');
     selectedParameters.clear();
     
     checkboxes.forEach(checkbox => {
@@ -1981,7 +2076,77 @@ function showParameterModal() {
     });
     
     updateParameterTags();
+    updateParameterVisibility();
     document.body.removeChild(overlay);
+  });
+}
+
+/**
+ * Updates the category checkbox based on individual parameter selections
+ * @param {string} category - The category key
+ * @param {HTMLElement} categoryEl - The category element containing checkboxes
+ */
+function updateCategoryCheckbox(category, categoryEl) {
+  const paramCheckboxes = categoryEl.querySelectorAll(`.param-option input[data-category="${category}"][data-param]`);
+  const categoryCheckbox = categoryEl.querySelector(`#category-${category}`);
+  
+  let allChecked = true;
+  let allUnchecked = true;
+  
+  paramCheckboxes.forEach(checkbox => {
+    if (checkbox.checked) {
+      allUnchecked = false;
+    } else {
+      allChecked = false;
+    }
+  });
+  
+  categoryCheckbox.checked = allChecked;
+  categoryCheckbox.indeterminate = !allChecked && !allUnchecked;
+}
+
+/**
+ * Updates the visibility of parameters in the UI based on selection
+ */
+function updateParameterVisibility() {
+  // First hide all parameter inputs
+  document.querySelectorAll('.parameter-control').forEach(control => {
+    control.style.display = 'none';
+  });
+  
+  // Show only selected parameters
+  selectedParameters.forEach(param => {
+    const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
+    if (paramControl) {
+      paramControl.style.display = 'block';
+    }
+  });
+  
+  // Update section visibility
+  document.querySelectorAll('.sound-params').forEach(section => {
+    const sectionId = section.id;
+    const categoryKey = sectionId.replace('Params', '');
+    
+    // Check if any parameter in this section is selected
+    let hasVisibleParams = false;
+    const params = allParameters[categoryKey]?.params;
+    
+    if (params) {
+      Object.keys(params).some(param => {
+        if (selectedParameters.has(param)) {
+          hasVisibleParams = true;
+          return true;
+        }
+        return false;
+      });
+    }
+    
+    // Show section if it has visible parameters
+    if (hasVisibleParams) {
+      section.style.display = 'block';
+    } else if (section.style.display !== 'none') {
+      section.style.display = 'none';
+    }
   });
 }
 
@@ -1992,4 +2157,58 @@ function showParameterModal() {
  */
 function isParameterSelected(paramId) {
   return selectedParameters.has(paramId);
+}
+
+// Initialize parameter system on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // ...existing code...
+  
+  // Wrap parameter labels and controls with a container for better visibility control
+  wrapParameterControls();
+  
+  // Initialize with default parameters for current sound type
+  const initialSoundType = document.getElementById('soundType').value;
+  updateSelectedParametersForType(initialSoundType);
+});
+
+/**
+ * Wraps parameter labels and controls with container elements for visibility control
+ */
+function wrapParameterControls() {
+  // Process all form elements
+  document.querySelectorAll('.sound-params').forEach(section => {
+    const sectionId = section.id;
+    const categoryKey = sectionId.replace('Params', '');
+    const params = allParameters[categoryKey]?.params;
+    
+    if (!params) return;
+    
+    // Find all parameter inputs in this section
+    Object.keys(params).forEach(paramKey => {
+      const input = document.getElementById(paramKey);
+      if (!input) return;
+      
+      // Find the label for this input
+      const label = document.querySelector(`label[for="${paramKey}"]`);
+      if (!label) return;
+      
+      // Group related elements (label, input, output if exists)
+      const container = document.createElement('div');
+      container.className = 'parameter-control';
+      container.dataset.param = paramKey;
+      
+      // Move the label into the container
+      label.parentNode.insertBefore(container, label);
+      container.appendChild(label);
+      
+      // Move the input into the container
+      container.appendChild(input);
+      
+      // If there's an output span, move it too
+      const output = document.getElementById(`${paramKey}Output`);
+      if (output) {
+        container.appendChild(output);
+      }
+    });
+  });
 }
