@@ -40,13 +40,57 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.collapse-toggle').forEach(toggle => {
     toggle.addEventListener('click', function(e) {
       const section = this.closest('.collapsible-section');
-      section.classList.toggle('collapsed');
+      toggleSectionCollapse(section);
       
       // Stop event propagation to prevent any unintended behavior
       e.stopPropagation();
     });
   });
+  
+  // Ensure the parameters are initially collapsed
+  document.querySelectorAll('.collapsible-section').forEach(section => {
+    // Make sure the content is actually hidden on page load
+    if (section.classList.contains('collapsed')) {
+      updateCollapsedState(section, true);
+    }
+  });
 });
+
+/**
+ * Toggles the collapsed state of a section
+ * @param {HTMLElement} section - The section to toggle
+ */
+function toggleSectionCollapse(section) {
+  const isCollapsed = section.classList.contains('collapsed');
+  section.classList.toggle('collapsed');
+  updateCollapsedState(section, !isCollapsed);
+}
+
+/**
+ * Updates the inline styles based on collapsed state
+ * @param {HTMLElement} section - The section to update
+ * @param {boolean} collapsed - Whether the section should be collapsed
+ */
+function updateCollapsedState(section, collapsed) {
+  const content = section.querySelector('.collapsible-content');
+  if (!content) return;
+  
+  if (collapsed) {
+    // Collapse the section
+    content.style.maxHeight = '0';
+    content.style.opacity = '0';
+    content.style.paddingTop = '0';
+    content.style.paddingBottom = '0';
+    content.style.pointerEvents = 'none';
+  } else {
+    // Expand the section
+    content.style.maxHeight = '1000px';
+    content.style.opacity = '1';
+    content.style.paddingTop = '';
+    content.style.paddingBottom = '';
+    content.style.pointerEvents = '';
+  }
+}
 
 // Update output values for sliders
 function updateParamOutput(paramId) {
@@ -886,3 +930,103 @@ document.head.insertAdjacentHTML('beforeend', `
     }
   </style>
 `);
+
+/**
+ * Generates random parameters for the selected sound type
+ */
+function randomizeParameters() {
+  const soundType = document.getElementById('soundType').value;
+  
+  // Helper function to get random number in range
+  function getRandomInRange(min, max, isInteger = false) {
+    const value = Math.random() * (max - min) + min;
+    return isInteger ? Math.floor(value) : value;
+  }
+  
+  // Helper function to get random item from array
+  function getRandomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+  }
+  
+  // Randomize based on sound type
+  if (soundType === "wind" || soundType === "custom") {
+    document.getElementById("windSpeed").value = getRandomInRange(10, 90, true);
+    document.getElementById("windGustiness").value = getRandomInRange(0, 1).toFixed(1);
+    document.getElementById("turbulence").value = getRandomInRange(0, 1).toFixed(1);
+    
+    const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const materials = ["grass", "snow", "rock", "sand"];
+    
+    document.getElementById("windDirection").value = getRandomItem(directions);
+    document.getElementById("groundMaterial").value = getRandomItem(materials);
+  }
+  
+  if (soundType === "ocean" || soundType === "custom") {
+    const waveHeight = getRandomInRange(20, 80, true);
+    document.getElementById("waveHeight").value = waveHeight;
+    updateParamOutput("waveHeight");
+    
+    const waveFrequency = getRandomInRange(0.2, 1.5).toFixed(1);
+    document.getElementById("waveFrequency").value = waveFrequency;
+    updateParamOutput("waveFrequency");
+    
+    const surfIntensity = getRandomInRange(0.3, 0.9).toFixed(1);
+    document.getElementById("surfIntensity").value = surfIntensity;
+    updateParamOutput("surfIntensity");
+    
+    const depths = ["shallow", "medium", "deep"];
+    document.getElementById("oceanDepth").value = getRandomItem(depths);
+  }
+  
+  if (soundType === "leaves" || soundType === "custom") {
+    document.getElementById("rustleIntensity").value = getRandomInRange(0.2, 0.8).toFixed(1);
+    document.getElementById("leafDensity").value = getRandomInRange(20, 80, true);
+    
+    const leafTypes = ["generic", "oak", "pine", "maple", "birch"];
+    document.getElementById("leafType").value = getRandomItem(leafTypes);
+  }
+  
+  if (soundType === "fire" || soundType === "custom") {
+    const fireIntensity = getRandomInRange(0.3, 0.8).toFixed(1);
+    document.getElementById("fireIntensity").value = fireIntensity;
+    updateParamOutput("fireIntensity");
+    
+    const crackleFrequency = getRandomInRange(2, 8).toFixed(1);
+    document.getElementById("crackleFrequency").value = crackleFrequency;
+    updateParamOutput("crackleFrequency");
+    
+    const crackleIntensity = getRandomInRange(0.3, 0.8).toFixed(1);
+    document.getElementById("crackleIntensity").value = crackleIntensity;
+    updateParamOutput("crackleIntensity");
+    
+    const flickerSpeed = getRandomInRange(0.5, 3).toFixed(1);
+    document.getElementById("flickerSpeed").value = flickerSpeed;
+    updateParamOutput("flickerSpeed");
+    
+    const fuelTypes = ["wood", "gas", "charcoal"];
+    document.getElementById("fuelType").value = getRandomItem(fuelTypes);
+    
+    const flameTemps = ["cool", "neutral", "warm"];
+    document.getElementById("flameTemp").value = getRandomItem(flameTemps);
+  }
+  
+  if (soundType === "footsteps" || soundType === "custom") {
+    document.getElementById("footstepVolume").value = getRandomInRange(0.3, 0.9).toFixed(1);
+    document.getElementById("stepFrequency").value = getRandomInRange(60, 160, true);
+    
+    const footwearTypes = ["sneakers", "boots", "sandals", "barefoot"];
+    document.getElementById("footwearType").value = getRandomItem(footwearTypes);
+    
+    const surfaces = ["grass", "gravel", "wood", "tile"];
+    document.getElementById("stepSurface").value = getRandomItem(surfaces);
+  }
+  
+  // Always randomize spatial parameters
+  document.getElementById("refDistance").value = getRandomInRange(3, 20, true);
+  document.getElementById("rolloff").value = getRandomInRange(0.5, 3).toFixed(1);
+  document.getElementById("coneInner").value = getRandomInRange(30, 120, true);
+  document.getElementById("coneOuter").value = getRandomInRange(150, 300, true);
+  document.getElementById("coneOuterGain").value = getRandomInRange(0.05, 0.3).toFixed(2);
+  
+  document.getElementById('playStatus').textContent = "Parameters randomized! Generate a sound key to save them.";
+}

@@ -245,6 +245,22 @@ button:disabled::before {
   background: rgba(255, 255, 255, 0.1); /* Lighter overlay when disabled */
 }
 
+.secondary-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  transition: background 0.2s, border-color 0.2s;
+  width: 100%;
+}
+
+.secondary-btn:hover {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue-light);
+}
+
 /* Key input styling */
 .key-input {
   margin-bottom: 15px;

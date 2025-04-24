@@ -33,12 +33,13 @@
               <option value="footsteps">Footsteps on Surface</option>
               <option value="custom">Custom Parameters</option>
             </select>
+            <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
           </fieldset>
 
           <!-- Sound Parameters Container -->
           <div id="parametersContainer">
-            <!-- WIND Specific Parameters -->
-            <fieldset id="windParams" class="sound-params collapsible-section">
+            <!-- WIND Specific Parameters - now with collapsed class -->
+            <fieldset id="windParams" class="sound-params collapsible-section collapsed">
               <legend class="collapse-toggle">Wind Parameters <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="windSpeed">Wind Speed (0–100):</label>
@@ -68,8 +69,8 @@
               </div>
             </fieldset>
 
-            <!-- OCEAN Specific Parameters -->
-            <fieldset id="oceanParams" class="sound-params collapsible-section" style="display:none;">
+            <!-- OCEAN Specific Parameters - now with collapsed class -->
+            <fieldset id="oceanParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Ocean Waves <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="waveHeight">Wave Height (0–100):</label>
@@ -93,8 +94,8 @@
               </div>
             </fieldset>
 
-            <!-- LEAVES Specific Parameters -->
-            <fieldset id="leavesParams" class="sound-params collapsible-section" style="display:none;">
+            <!-- LEAVES Specific Parameters - now with collapsed class -->
+            <fieldset id="leavesParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Leaves Rustling <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
@@ -112,8 +113,8 @@
               </div>
             </fieldset>
 
-            <!-- FIRE Specific Parameters -->
-            <fieldset id="fireParams" class="sound-params collapsible-section" style="display:none;">
+            <!-- FIRE Specific Parameters - now with collapsed class -->
+            <fieldset id="fireParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Ambient Fire <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
@@ -148,8 +149,8 @@
               </div>
             </fieldset>
 
-            <!-- FOOTSTEPS Specific Parameters -->
-            <fieldset id="footstepsParams" class="sound-params collapsible-section" style="display:none;">
+            <!-- FOOTSTEPS Specific Parameters - now with collapsed class -->
+            <fieldset id="footstepsParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Footsteps <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="footstepVolume">Footstep Volume (0.0–1.0):</label>
@@ -173,8 +174,8 @@
               </div>
             </fieldset>
 
-            <!-- Global Spatial Parameters (applies to all sound types) -->
-            <fieldset id="spatialParams" class="collapsible-section">
+            <!-- Global Spatial Parameters - now with collapsed class -->
+            <fieldset id="spatialParams" class="collapsible-section collapsed">
               <legend class="collapse-toggle">Spatial Parameters <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="refDistance">Reference Distance (2–50):</label>
