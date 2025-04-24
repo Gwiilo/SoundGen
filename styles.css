@@ -70,3 +70,13 @@ input[type="range"]::-moz-range-thumb {
   background: #4CAF50;
   cursor: pointer;
 }
+
+#playStatus {
+  font-style: italic;
+  min-height: 1.2em;
+}
+
+button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}

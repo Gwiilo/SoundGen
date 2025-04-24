@@ -46,18 +46,24 @@ function hashString(str) {
 
 // Get cached noise buffer or create a new one.
 function getCachedNoiseBuffer(audioCtx, key, duration) {
-  const cacheKey = key + "_" + duration;
-  if (cachedBuffers[cacheKey]) {
-    return cachedBuffers[cacheKey];
-  } else {
-    const bufferSize = duration * audioCtx.sampleRate;
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+  try {
+    const cacheKey = key + "_" + duration;
+    if (cachedBuffers[cacheKey]) {
+      return cachedBuffers[cacheKey];
+    } else {
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      cachedBuffers[cacheKey] = buffer;
+      return buffer;
     }
-    cachedBuffers[cacheKey] = buffer;
-    return buffer;
+  } catch (error) {
+    console.error("Error in getCachedNoiseBuffer:", error);
+    // Return a minimal silent buffer as fallback
+    return audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
   }
 }
 
@@ -106,6 +112,7 @@ function generateSoundKey() {
   const key = hashString(paramString).toString(16);
   soundLibrary[key] = params;
   document.getElementById("soundKeyDisplay").textContent = key;
+  document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
 }
 
 ///////////////////////////
@@ -114,13 +121,31 @@ function generateSoundKey() {
 const SoundGenerator = {
   // Reusable white noise buffer.
   createNoiseBuffer: function(audioCtx, duration) {
-    return getCachedNoiseBuffer(audioCtx, "white", duration);
+    try {
+      if (!audioCtx || !audioCtx.createBuffer) {
+        console.warn("Invalid audio context provided to createNoiseBuffer");
+        return null;
+      }
+      return getCachedNoiseBuffer(audioCtx, "white", duration);
+    } catch (error) {
+      console.error("Error creating noise buffer:", error);
+      // Create a silent buffer as fallback
+      const sampleRate = audioCtx.sampleRate || 44100;
+      const bufferSize = Math.floor((duration || 1) * sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+      return buffer;
+    }
   },
 
   // WIND buffer.
   createWindBuffer: function(audioCtx, params) {
-    const duration = 4;
-    return this.createNoiseBuffer(audioCtx, duration);
+    try {
+      const duration = 4;
+      return this.createNoiseBuffer(audioCtx, duration);
+    } catch (error) {
+      console.error("Error creating wind buffer:", error);
+      return audioCtx.createBuffer(1, audioCtx.sampleRate * 4, audioCtx.sampleRate);
+    }
   },
 
   // LEAVES buffer.
@@ -180,15 +205,17 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
     console.error("Unknown sound key:", soundKey);
     return;
   }
+  
+  console.log("Creating sound for type:", params.soundType);
   const audioCtx = audioListener.context;
-  const positionalAudio = new THREE.PositionalAudio(audioListener);
-  // Apply spatial parameters.
-  positionalAudio.setRefDistance(params.refDistance || 5);
-  positionalAudio.setRolloffFactor(params.rolloff || 1);
-  positionalAudio.setDistanceModel("exponential");
-  positionalAudio.setDirectionalCone(params.coneInner || 60, params.coneOuter || 180, params.coneOuterGain || 0.1);
+  
+  // Create a sound object
+  const soundObject = new THREE.Object3D();
+  soundObject.position.copy(position);
+  soundObject.lookAt(position.clone().add(orientation));
+  scene.add(soundObject);
 
-  // Choose the sound buffer based on type.
+  // Choose the sound buffer based on type
   let buffer;
   switch (params.soundType) {
     case "wind":
@@ -207,59 +234,105 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
       console.error("Unsupported sound type:", params.soundType);
       return;
   }
+  
+  // Create the positional audio object
+  const positionalAudio = new THREE.PositionalAudio(audioListener);
+  
+  // Apply spatial parameters
+  positionalAudio.setRefDistance(params.refDistance || 5);
+  positionalAudio.setRolloffFactor(params.rolloff || 1);
+  positionalAudio.setDistanceModel("exponential");
+  positionalAudio.setDirectionalCone(
+    params.coneInner || 60, 
+    params.coneOuter || 180, 
+    params.coneOuterGain || 0.1
+  );
+
+  // Set buffer and looping
   positionalAudio.setBuffer(buffer);
   if (["wind", "fire"].includes(params.soundType)) {
     positionalAudio.setLoop(true);
   }
-
-  // Build processing chain.
-  if (params.soundType === "wind") {
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = "bandpass";
-    let cutoff = 200 + (params.windSpeed / 100) * 1800;
-    // Adjust cutoff based on ground material.
-    if (params.groundMaterial === "snow") cutoff += 200;
-    else if (params.groundMaterial === "rock") cutoff -= 200;
-    else if (params.groundMaterial === "sand") cutoff -= 100;
-    filter.frequency.value = cutoff;
-    // LFO modulation on cutoff.
-    const lfo = audioCtx.createOscillator();
-    const lfoGain = audioCtx.createGain();
-    lfo.frequency.value = params.windGustiness * 0.5; // slower for lower gustiness
-    lfoGain.gain.value = 50;
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
-    lfo.start();
-    positionalAudio.disconnect();
-    positionalAudio.source.connect(filter);
-    filter.connect(positionalAudio.gain);
-  } else if (params.soundType === "fire") {
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 500 + (params.fireIntensity || 0.5) * 2500;
-    positionalAudio.disconnect();
-    positionalAudio.source.connect(filter);
-    filter.connect(positionalAudio.gain);
-  }
-
-  // Create an Object3D to attach the audio.
-  const soundObject = new THREE.Object3D();
-  soundObject.position.copy(position);
-  soundObject.lookAt(position.clone().add(orientation));
+  
+  // Add to the 3D object
   soundObject.add(positionalAudio);
-  scene.add(soundObject);
-
-  // Schedule envelope.
+  
+  // Schedule envelope
   const duration = options.duration || 3;
   scheduleEnvelope(positionalAudio.gain, audioCtx, duration, options.fadeIn, options.fadeOut);
-
+  
+  // Start playback
   positionalAudio.play();
+  
+  // Setup audio processing AFTER playback starts
   setTimeout(() => {
-    positionalAudio.stop();
+    try {
+      // Get access to the Web Audio API context
+      const audioCtx = audioListener.context;
+      
+      if (params.soundType === "wind" && positionalAudio.source) {
+        console.log("Applying wind sound effects");
+        
+        // Create filter
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "bandpass";
+        let cutoff = 200 + (params.windSpeed / 100) * 1800;
+        
+        // Adjust cutoff based on ground material
+        if (params.groundMaterial === "snow") cutoff += 200;
+        else if (params.groundMaterial === "rock") cutoff -= 200;
+        else if (params.groundMaterial === "sand") cutoff -= 100;
+        filter.frequency.value = cutoff;
+        
+        // Create LFO for wind effects
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        lfo.frequency.value = params.windGustiness * 0.5;
+        lfoGain.gain.value = 50;
+        
+        // Connect LFO to filter frequency
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+        lfo.start();
+        
+        // Instead of trying to modify Three.js internal audio chain,
+        // we'll just apply a filter to the sound output
+        // This is safer than disconnecting the source
+        const gainNode = positionalAudio.gain;
+        const gainValue = gainNode.gain.value;
+        
+        // Create a new filter and gain in the chain
+        const additionalGain = audioCtx.createGain();
+        additionalGain.gain.value = gainValue;
+        
+        // Apply the filter to the audio output
+        positionalAudio.setFilter(filter);
+      } 
+      else if (params.soundType === "fire" && positionalAudio.source) {
+        console.log("Applying fire sound effects");
+        
+        // Fire sound processing - use the built-in filter method
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 500 + (params.fireIntensity || 0.5) * 2500;
+        
+        // Use the Three.js setFilter method instead of manual connections
+        positionalAudio.setFilter(filter);
+      }
+    } catch (error) {
+      console.warn("Could not apply audio effects:", error);
+    }
+  }, 50); // Small delay to ensure audio is initialized
+  
+  // Set timeout to remove when done
+  setTimeout(() => {
+    if (positionalAudio.isPlaying) {
+      positionalAudio.stop();
+    }
     scene.remove(soundObject);
   }, duration * 1000);
-
-  // If velocity provided, add to moving audio list.
+  
+  // If velocity provided, add to moving audio list
   if (options.velocity) {
     movingAudioObjects.push({
       object: soundObject,
@@ -302,15 +375,32 @@ function updateDurationDisplay(value) {
   document.getElementById('durationValue').textContent = value;
 }
 
+// Track active sounds
+let currentlyPlaying = null;
+
 function playSoundFromUI() {
   const key = document.getElementById("soundKeyDisplay").textContent;
+  console.log("Attempting to play sound with key:", key);
+  
   if (!key) {
-    alert("Please generate a sound key first.");
+    alert("Please generate a sound key first by clicking the 'Generate Sound Key' button.");
     return;
   }
   
   // Get duration from slider
   const duration = parseInt(document.getElementById("playbackDuration").value);
+  console.log("Playing sound for", duration, "seconds");
+  
+  // Update UI to show sound is playing
+  const playButton = document.querySelector('button[onclick="playSoundFromUI()"]');
+  playButton.textContent = "Playing...";
+  playButton.disabled = true;
+  
+  // Ensure audio context is running (needed for some browsers)
+  if (audioListener.context.state === 'suspended') {
+    console.log("Resuming audio context");
+    audioListener.context.resume();
+  }
   
   const orientation = new THREE.Vector3(0, 0, -1);
   const position = new THREE.Vector3(0, 5, 0);
@@ -320,5 +410,23 @@ function playSoundFromUI() {
     fadeIn: 0.2,
     fadeOut: 0.3
   };
-  playSoundFromKey(key, orientation, position, options);
+  
+  try {
+    currentlyPlaying = playSoundFromKey(key, orientation, position, options);
+    document.getElementById('playStatus').textContent = `Playing ${duration} seconds of sound...`;
+    
+    // Reset UI after playback completes
+    setTimeout(() => {
+      playButton.textContent = "Play Sound";
+      playButton.disabled = false;
+      document.getElementById('playStatus').textContent = "";
+      currentlyPlaying = null;
+    }, duration * 1000);
+    
+  } catch (error) {
+    console.error("Error playing sound:", error);
+    playButton.textContent = "Play Sound";
+    playButton.disabled = false;
+    document.getElementById('playStatus').textContent = "Error playing sound, check console";
+  }
 }
