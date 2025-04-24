@@ -1,13 +1,105 @@
 ///////////////////////////
-// UI Behavior: Show/hide fieldsets
+// UI Behavior: Show/hide fieldsets and handle parameters
 ///////////////////////////
-document.getElementById('soundType').addEventListener('change', function() {
-  const type = this.value;
-  document.getElementById('windParams').style.display = (type === 'wind') ? 'block' : 'none';
-  document.getElementById('leavesParams').style.display = (type === 'leaves') ? 'block' : 'none';
-  document.getElementById('fireParams').style.display = (type === 'fire') ? 'block' : 'none';
-  document.getElementById('footstepsParams').style.display = (type === 'footsteps') ? 'block' : 'none';
+document.addEventListener('DOMContentLoaded', function() {
+  // Show/hide correct parameter panels when sound type changes
+  document.getElementById('soundType').addEventListener('change', function() {
+    const type = this.value;
+    const paramPanels = document.querySelectorAll('.sound-params');
+    
+    // Hide all parameter panels first
+    paramPanels.forEach(panel => {
+      panel.style.display = 'none';
+    });
+    
+    // Show the selected one
+    if (type === 'custom') {
+      // For custom, show all parameters
+      paramPanels.forEach(panel => {
+        panel.style.display = 'block';
+      });
+    } else {
+      // For specific presets, show only the relevant panel
+      const selectedPanel = document.getElementById(`${type}Params`);
+      if (selectedPanel) {
+        selectedPanel.style.display = 'block';
+      }
+      
+      // Apply preset values
+      applyPresetValues(type);
+    }
+  });
+  
+  // Initialize parameter value displays for all sliders
+  document.querySelectorAll('.slider').forEach(slider => {
+    const id = slider.id;
+    updateParamOutput(id);
+  });
 });
+
+// Update output values for sliders
+function updateParamOutput(paramId) {
+  const slider = document.getElementById(paramId);
+  const output = document.getElementById(`${paramId}Output`);
+  if (slider && output) {
+    output.textContent = slider.value;
+  }
+}
+
+// Preset parameter values for different sound types
+const presetValues = {
+  wind: {
+    windSpeed: 40,
+    windGustiness: 0.5,
+    windDirection: 'N',
+    turbulence: 0.3,
+    groundMaterial: 'grass',
+  },
+  ocean: {
+    waveHeight: 60,
+    waveFrequency: 0.5,
+    surfIntensity: 0.7,
+    oceanDepth: 'medium',
+  },
+  leaves: {
+    rustleIntensity: 0.5,
+    leafType: 'generic',
+    leafDensity: 50,
+  },
+  fire: {
+    fireIntensity: 0.5,
+    crackleFrequency: 5,
+    crackleIntensity: 0.6,
+    flickerSpeed: 1.0,
+    fuelType: 'wood',
+    flameTemp: 'neutral',
+  },
+  footsteps: {
+    footstepVolume: 0.6,
+    stepFrequency: 100,
+    footwearType: 'sneakers',
+    stepSurface: 'grass',
+  }
+};
+
+// Apply preset values to form inputs
+function applyPresetValues(soundType) {
+  const preset = presetValues[soundType];
+  if (!preset) return;
+  
+  // Apply preset values to form elements
+  Object.keys(preset).forEach(param => {
+    const element = document.getElementById(param);
+    if (element) {
+      element.value = preset[param];
+      
+      // Update slider displays if applicable
+      if (element.classList.contains('slider')) {
+        updateParamOutput(param);
+      }
+    }
+  });
+}
 
 ///////////////////////////
 // Basic Three.js Setup
@@ -73,35 +165,97 @@ function getCachedNoiseBuffer(audioCtx, key, duration) {
 // Map generated sound keys to parameter objects.
 const soundLibrary = {};
 
+// Load a sound from key
+function loadSoundKey() {
+  const inputKey = document.getElementById('soundKeyInput').value.trim();
+  
+  if (!inputKey) {
+    alert("Please enter a sound key.");
+    return;
+  }
+  
+  if (soundLibrary[inputKey]) {
+    // Key exists in library, load its parameters
+    const params = soundLibrary[inputKey];
+    
+    // Set the sound type dropdown
+    document.getElementById('soundType').value = params.soundType;
+    
+    // Show the appropriate parameter panel
+    const paramPanels = document.querySelectorAll('.sound-params');
+    paramPanels.forEach(panel => {
+      panel.style.display = 'none';
+    });
+    
+    const selectedPanel = document.getElementById(`${params.soundType}Params`);
+    if (selectedPanel) {
+      selectedPanel.style.display = 'block';
+    }
+    
+    // Apply the parameters to form inputs
+    Object.keys(params).forEach(param => {
+      if (param !== 'soundType') {
+        const element = document.getElementById(param);
+        if (element) {
+          element.value = params[param];
+          if (element.classList.contains('slider')) {
+            updateParamOutput(param);
+          }
+        }
+      }
+    });
+    
+    // Display the key
+    document.getElementById('soundKeyDisplay').textContent = inputKey;
+    document.getElementById('playStatus').textContent = "Sound key loaded! Click 'Play Sound' to hear it.";
+  } else {
+    alert("Sound key not found in library. Please generate it first.");
+  }
+}
+
 function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
 
-  // Gather type-specific parameters.
-  if (soundType === "wind") {
+  // Gather parameters based on sound type
+  if (soundType === "wind" || soundType === "custom") {
     params.windSpeed = parseFloat(document.getElementById("windSpeed").value);
     params.windGustiness = parseFloat(document.getElementById("windGustiness").value);
     params.windDirection = document.getElementById("windDirection").value;
     params.turbulence = parseFloat(document.getElementById("turbulence").value);
     params.groundMaterial = document.getElementById("groundMaterial").value;
-  } else if (soundType === "leaves") {
+  }
+  
+  if (soundType === "ocean" || soundType === "custom") {
+    params.waveHeight = parseFloat(document.getElementById("waveHeight").value);
+    params.waveFrequency = parseFloat(document.getElementById("waveFrequency").value);
+    params.surfIntensity = parseFloat(document.getElementById("surfIntensity").value);
+    params.oceanDepth = document.getElementById("oceanDepth").value;
+  }
+  
+  if (soundType === "leaves" || soundType === "custom") {
     params.rustleIntensity = parseFloat(document.getElementById("rustleIntensity").value);
     params.leafType = document.getElementById("leafType").value;
     params.leafDensity = parseFloat(document.getElementById("leafDensity").value);
-  } else if (soundType === "fire") {
+  }
+  
+  if (soundType === "fire" || soundType === "custom") {
     params.fireIntensity = parseFloat(document.getElementById("fireIntensity").value);
     params.crackleFrequency = parseFloat(document.getElementById("crackleFrequency").value);
+    params.crackleIntensity = parseFloat(document.getElementById("crackleIntensity").value);
     params.flickerSpeed = parseFloat(document.getElementById("flickerSpeed").value);
     params.fuelType = document.getElementById("fuelType").value;
     params.flameTemp = document.getElementById("flameTemp").value;
-  } else if (soundType === "footsteps") {
+  }
+  
+  if (soundType === "footsteps" || soundType === "custom") {
     params.footstepVolume = parseFloat(document.getElementById("footstepVolume").value);
     params.stepFrequency = parseFloat(document.getElementById("stepFrequency").value);
     params.footwearType = document.getElementById("footwearType").value;
     params.stepSurface = document.getElementById("stepSurface").value;
   }
 
-  // Gather spatial parameters (common to all sounds).
+  // Gather spatial parameters (common to all sounds)
   params.refDistance = parseFloat(document.getElementById("refDistance").value);
   params.rolloff = parseFloat(document.getElementById("rolloff").value);
   params.coneInner = parseFloat(document.getElementById("coneInner").value);
@@ -113,6 +267,9 @@ function generateSoundKey() {
   soundLibrary[key] = params;
   document.getElementById("soundKeyDisplay").textContent = key;
   document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
+  
+  // Also update the input field with the new key
+  document.getElementById('soundKeyInput').value = key;
 }
 
 ///////////////////////////
@@ -137,7 +294,7 @@ const SoundGenerator = {
     }
   },
 
-  // WIND buffer.
+  // WIND buffer
   createWindBuffer: function(audioCtx, params) {
     try {
       const duration = 4;
@@ -148,16 +305,91 @@ const SoundGenerator = {
     }
   },
 
+  // OCEAN buffer
+  createOceanBuffer: function(audioCtx, params) {
+    try {
+      const duration = 6;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      const waveFreq = params.waveFrequency || 0.5;
+      const waveHeight = (params.waveHeight || 60) / 100;
+      
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        // Base ocean noise
+        let noise = Math.random() * 2 - 1;
+        // Add slow wave modulation
+        const wave = Math.sin(2 * Math.PI * waveFreq * t) * 0.5;
+        data[i] = (noise * 0.3 + wave * 0.7) * waveHeight;
+      }
+      return buffer;
+    } catch (error) {
+      console.error("Error creating ocean buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 6);
+    }
+  },
+
+  // FIRE buffer with crackling
+  createFireBuffer: function(audioCtx, params) {
+    try {
+      const duration = 4;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      const crackleFreq = params.crackleFrequency || 5;
+      const crackleIntensity = params.crackleIntensity || 0.6;
+      const fireIntensity = params.fireIntensity || 0.5;
+      
+      // Create crackling fire sound
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Base fire noise (low frequency)
+        let noise = Math.random() * 2 - 1;
+        
+        // Add crackling effect
+        if (Math.random() < (crackleFreq / 100)) {
+          // Randomly trigger crackling sounds
+          const crackleLength = Math.floor(audioCtx.sampleRate * 0.05); // 50ms crackle
+          if (i + crackleLength < bufferSize) {
+            for (let j = 0; j < crackleLength; j++) {
+              // Create a short sharp sound for the crackle
+              const crackleEnv = Math.exp(-10 * (j / crackleLength));
+              data[i + j] += (Math.random() * 2 - 1) * crackleEnv * crackleIntensity;
+            }
+          }
+        }
+        
+        // Add slow modulation for the fire base
+        const flicker = Math.sin(2 * Math.PI * 0.5 * t) * 0.2;
+        data[i] = (noise * 0.3 + flicker) * fireIntensity;
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating fire buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 4);
+    }
+  },
+
   // LEAVES buffer.
   createLeavesBuffer: function(audioCtx, params) {
     const duration = 1;
     return getCachedNoiseBuffer(audioCtx, "leaves", duration);
-  },
-
-  // FIRE buffer.
-  createFireBuffer: function(audioCtx, params) {
-    const duration = 4;
-    return this.createNoiseBuffer(audioCtx, duration);
   },
 
   // FOOTSTEPS buffer.
@@ -221,6 +453,9 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
     case "wind":
       buffer = SoundGenerator.createWindBuffer(audioCtx, params);
       break;
+    case "ocean":
+      buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
+      break;
     case "leaves":
       buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
       break;
@@ -229,6 +464,22 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
       break;
     case "footsteps":
       buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+      break;
+    case "custom":
+      // For custom, determine which buffer to use based on parameters
+      if (params.windSpeed !== undefined) {
+        buffer = SoundGenerator.createWindBuffer(audioCtx, params);
+      } else if (params.waveHeight !== undefined) {
+        buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
+      } else if (params.rustleIntensity !== undefined) {
+        buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
+      } else if (params.fireIntensity !== undefined) {
+        buffer = SoundGenerator.createFireBuffer(audioCtx, params);
+      } else if (params.footstepVolume !== undefined) {
+        buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+      } else {
+        buffer = SoundGenerator.createNoiseBuffer(audioCtx, 3);
+      }
       break;
     default:
       console.error("Unsupported sound type:", params.soundType);
@@ -250,7 +501,7 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
 
   // Set buffer and looping
   positionalAudio.setBuffer(buffer);
-  if (["wind", "fire"].includes(params.soundType)) {
+  if (["wind", "fire", "ocean"].includes(params.soundType)) {
     positionalAudio.setLoop(true);
   }
   
@@ -264,59 +515,57 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
   // Start playback
   positionalAudio.play();
   
-  // Setup audio processing AFTER playback starts
+  // Apply appropriate audio processing based on sound type
   setTimeout(() => {
     try {
-      // Get access to the Web Audio API context
       const audioCtx = audioListener.context;
       
-      if (params.soundType === "wind" && positionalAudio.source) {
+      // Apply specific processing based on sound type
+      if ((params.soundType === "wind" || (params.soundType === "custom" && params.windSpeed !== undefined)) && positionalAudio.source) {
         console.log("Applying wind sound effects");
         
-        // Create filter
         const filter = audioCtx.createBiquadFilter();
         filter.type = "bandpass";
         let cutoff = 200 + (params.windSpeed / 100) * 1800;
         
-        // Adjust cutoff based on ground material
-        if (params.groundMaterial === "snow") cutoff += 200;
-        else if (params.groundMaterial === "rock") cutoff -= 200;
-        else if (params.groundMaterial === "sand") cutoff -= 100;
+        if (params.groundMaterial) {
+          if (params.groundMaterial === "snow") cutoff += 200;
+          else if (params.groundMaterial === "rock") cutoff -= 200;
+          else if (params.groundMaterial === "sand") cutoff -= 100;
+        }
+        
         filter.frequency.value = cutoff;
         
-        // Create LFO for wind effects
-        const lfo = audioCtx.createOscillator();
-        const lfoGain = audioCtx.createGain();
-        lfo.frequency.value = params.windGustiness * 0.5;
-        lfoGain.gain.value = 50;
-        
-        // Connect LFO to filter frequency
-        lfo.connect(lfoGain);
-        lfoGain.connect(filter.frequency);
-        lfo.start();
-        
-        // Instead of trying to modify Three.js internal audio chain,
-        // we'll just apply a filter to the sound output
-        // This is safer than disconnecting the source
-        const gainNode = positionalAudio.gain;
-        const gainValue = gainNode.gain.value;
-        
-        // Create a new filter and gain in the chain
-        const additionalGain = audioCtx.createGain();
-        additionalGain.gain.value = gainValue;
-        
-        // Apply the filter to the audio output
+        // Apply the filter
         positionalAudio.setFilter(filter);
       } 
-      else if (params.soundType === "fire" && positionalAudio.source) {
-        console.log("Applying fire sound effects");
+      else if ((params.soundType === "ocean" || (params.soundType === "custom" && params.waveHeight !== undefined)) && positionalAudio.source) {
+        console.log("Applying ocean sound effects");
         
-        // Fire sound processing - use the built-in filter method
+        // Create low-pass filter for ocean sound
         const filter = audioCtx.createBiquadFilter();
         filter.type = "lowpass";
-        filter.frequency.value = 500 + (params.fireIntensity || 0.5) * 2500;
+        let cutoff = 500;
         
-        // Use the Three.js setFilter method instead of manual connections
+        if (params.oceanDepth) {
+          if (params.oceanDepth === "shallow") cutoff += 300;
+          else if (params.oceanDepth === "deep") cutoff -= 200;
+        }
+        
+        filter.frequency.value = cutoff;
+        
+        // Apply the filter
+        positionalAudio.setFilter(filter);
+      }
+      else if ((params.soundType === "fire" || (params.soundType === "custom" && params.fireIntensity !== undefined)) && positionalAudio.source) {
+        console.log("Applying fire sound effects");
+        
+        // Create filter for fire sound
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 800 + (params.fireIntensity || 0.5) * 1600;
+        
+        // Apply the filter
         positionalAudio.setFilter(filter);
       }
     } catch (error) {
@@ -324,7 +573,7 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
     }
   }, 50); // Small delay to ensure audio is initialized
   
-  // Set timeout to remove when done
+  // Set timeout to clean up
   setTimeout(() => {
     if (positionalAudio.isPlaying) {
       positionalAudio.stop();
@@ -332,13 +581,14 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
     scene.remove(soundObject);
   }, duration * 1000);
   
-  // If velocity provided, add to moving audio list
+  // Handle moving audio objects
   if (options.velocity) {
     movingAudioObjects.push({
       object: soundObject,
       velocity: options.velocity.clone()
     });
   }
+  
   return positionalAudio;
 }
 
