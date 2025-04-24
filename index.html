@@ -38,6 +38,16 @@
               <option value="formant">Voice & Formant</option>
               <option value="custom">Custom Parameters</option>
             </select>
+            
+            <!-- Parameter Selection UI -->
+            <div class="parameter-selection">
+              <label>Active Parameters:</label>
+              <div class="parameter-tags" id="selectedParameters">
+                <!-- Parameters will be added here dynamically -->
+              </div>
+              <button type="button" id="addParameterBtn" class="add-param-btn">+</button>
+            </div>
+            
             <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
           </fieldset>
 

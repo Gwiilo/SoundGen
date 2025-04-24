@@ -54,6 +54,18 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCollapsedState(section, true);
     }
   });
+  
+  // Add event listener for sound type changes
+  document.getElementById('soundType').addEventListener('change', function() {
+    updateSelectedParametersForType(this.value);
+  });
+  
+  // Add event listener for the add parameter button
+  document.getElementById('addParameterBtn').addEventListener('click', showParameterModal);
+  
+  // Initialize with default parameters for current sound type
+  const initialSoundType = document.getElementById('soundType').value;
+  updateSelectedParametersForType(initialSoundType);
 });
 
 /**
@@ -348,6 +360,16 @@ function applyParametersToUI(params) {
       }
     }
   });
+  
+  // Update selected parameters based on params object
+  selectedParameters.clear();
+  Object.keys(params).forEach(param => {
+    if (param !== 'soundType') {
+      selectedParameters.add(param);
+    }
+  });
+  
+  updateParameterTags();
 }
 
 // Handle generating universal sound keys (for backward compatibility)
@@ -355,203 +377,21 @@ function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
 
-  // Gather parameters based on sound type
-  if (soundType === "wind" || soundType === "custom") {
-    params.windSpeed = parseFloat(document.getElementById("windSpeed").value);
-    params.windGustiness = parseFloat(document.getElementById("windGustiness").value);
-    params.windDirection = document.getElementById("windDirection").value;
-    params.turbulence = parseFloat(document.getElementById("turbulence").value);
-    params.groundMaterial = document.getElementById("groundMaterial").value;
-  }
-  
-  if (soundType === "ocean" || soundType === "custom") {
-    params.waveHeight = parseFloat(document.getElementById("waveHeight").value);
-    params.waveFrequency = parseFloat(document.getElementById("waveFrequency").value);
-    params.surfIntensity = parseFloat(document.getElementById("surfIntensity").value);
-    params.oceanDepth = document.getElementById("oceanDepth").value;
-  }
-  
-  if (soundType === "leaves" || soundType === "custom") {
-    params.rustleIntensity = parseFloat(document.getElementById("rustleIntensity").value);
-    params.leafType = document.getElementById("leafType").value;
-    params.leafDensity = parseFloat(document.getElementById("leafDensity").value);
-  }
-  
-  if (soundType === "fire" || soundType === "custom") {
-    params.fireIntensity = parseFloat(document.getElementById("fireIntensity").value);
-    params.crackleFrequency = parseFloat(document.getElementById("crackleFrequency").value);
-    params.crackleIntensity = parseFloat(document.getElementById("crackleIntensity").value);
-    params.flickerSpeed = parseFloat(document.getElementById("flickerSpeed").value);
-    params.fuelType = document.getElementById("fuelType").value;
-    params.flameTemp = document.getElementById("flameTemp").value;
-  }
-  
-  if (soundType === "footsteps" || soundType === "custom") {
-    params.footstepVolume = parseFloat(document.getElementById("footstepVolume").value);
-    params.stepFrequency = parseFloat(document.getElementById("stepFrequency").value);
-    params.footwearType = document.getElementById("footwearType").value;
-    params.stepSurface = document.getElementById("stepSurface").value;
-  }
-
-  // NEW: Synthesizer parameters
-  if (soundType === "synthesizer" || soundType === "custom") {
-    if (document.getElementById("oscType")) {
-      params.oscType = document.getElementById("oscType").value;
-      params.oscFrequency = parseFloat(document.getElementById("oscFrequency").value);
-      params.oscDetune = parseFloat(document.getElementById("oscDetune").value);
-      params.harmonic1 = parseFloat(document.getElementById("harmonic1").value);
-      params.harmonic2 = parseFloat(document.getElementById("harmonic2").value);
-      params.harmonic3 = parseFloat(document.getElementById("harmonic3").value);
-      params.noiseAmount = parseFloat(document.getElementById("noiseAmount").value);
-    }
-    
-    // LFO parameters if available
-    if (document.getElementById("lfoRate")) {
-      params.lfoRate = parseFloat(document.getElementById("lfoRate").value);
-      params.lfoDepth = parseFloat(document.getElementById("lfoDepth").value);
-      params.lfoTarget = document.getElementById("lfoTarget").value;
-    }
-    
-    // Filter parameters if available
-    if (document.getElementById("filterType")) {
-      params.filterType = document.getElementById("filterType").value;
-      params.filterCutoff = parseFloat(document.getElementById("filterCutoff").value);
-      params.filterResonance = parseFloat(document.getElementById("filterResonance").value);
-    }
-  }
-  
-  // NEW: Percussion parameters
-  if (soundType === "percussion" || soundType === "custom") {
-    if (document.getElementById("impactSharpness")) {
-      params.impactSharpness = parseFloat(document.getElementById("impactSharpness").value);
-      params.bodyResonance = parseFloat(document.getElementById("bodyResonance").value);
-      params.decayLength = parseFloat(document.getElementById("decayLength").value);
-      params.pitchBend = parseFloat(document.getElementById("pitchBend").value);
-      params.materialHardness = parseFloat(document.getElementById("materialHardness").value);
-      params.materialDensity = parseFloat(document.getElementById("materialDensity").value);
-    }
-  }
-  
-  // NEW: Noise parameters
-  if (soundType === "noise" || soundType === "custom") {
-    if (document.getElementById("noiseColor")) {
-      params.noiseColor = document.getElementById("noiseColor").value;
-      params.noiseDensity = parseFloat(document.getElementById("noiseDensity").value);
-      params.lowFreqContent = parseFloat(document.getElementById("lowFreqContent").value);
-      params.highFreqContent = parseFloat(document.getElementById("highFreqContent").value);
-      params.spectralTilt = parseFloat(document.getElementById("spectralTilt").value);
-    }
-  }
-  
-  // NEW: Mechanical parameters
-  if (soundType === "mechanical" || soundType === "custom") {
-    if (document.getElementById("rpm")) {
-      params.rpm = parseFloat(document.getElementById("rpm").value);
-      params.gearRatio = parseFloat(document.getElementById("gearRatio").value);
-      params.friction = parseFloat(document.getElementById("friction").value);
-      params.metallic = parseFloat(document.getElementById("metallic").value);
-      params.mechanicalLooseness = parseFloat(document.getElementById("mechanicalLooseness").value);
-    }
-  }
-  
-  // NEW: Formant parameters
-  if (soundType === "formant" || soundType === "custom") {
-    if (document.getElementById("formant1")) {
-      params.formant1 = parseFloat(document.getElementById("formant1").value);
-      params.formant2 = parseFloat(document.getElementById("formant2").value);
-      params.formant3 = parseFloat(document.getElementById("formant3").value);
-      params.breathiness = parseFloat(document.getElementById("breathiness").value);
-      params.vocalTension = parseFloat(document.getElementById("vocalTension").value);
-      params.vibrato = parseFloat(document.getElementById("vibrato").value);
-      params.vibratoRate = parseFloat(document.getElementById("vibratoRate").value);
-    }
-  }
-
-  // NEW: Enhanced synthesizer parameters
-  if (soundType === "synthesizer" || soundType === "custom") {
-    if (document.getElementById("oscType")) {
-      // ...existing synth parameter gathering...
-
-      // Add enhanced parameters
-      if (document.getElementById("filterType")) {
-        params.filterType = document.getElementById("filterType").value;
-        params.filterCutoff = parseFloat(document.getElementById("filterCutoff").value);
-        params.filterResonance = parseFloat(document.getElementById("filterResonance").value);
-        params.envelopeAttack = parseFloat(document.getElementById("envelopeAttack").value);
-        params.envelopeRelease = parseFloat(document.getElementById("envelopeRelease").value);
+  // Only gather parameters that are selected
+  for (const category in allParameters) {
+    for (const param in allParameters[category].params) {
+      if (selectedParameters.has(param)) {
+        const element = document.getElementById(param);
+        if (element) {
+          if (element.type === "number" || element.tagName === "SELECT" || 
+              element.classList.contains('slider')) {
+            params[param] = element.type === "number" || element.classList.contains('slider') ? 
+                            parseFloat(element.value) : element.value;
+          }
+        }
       }
     }
   }
-  
-  // NEW: Enhanced percussion parameters
-  if (soundType === "percussion" || soundType === "custom") {
-    if (document.getElementById("impactSharpness")) {
-      // ...existing percussion parameter gathering...
-      
-      // Add enhanced parameters
-      if (document.getElementById("percussionType")) {
-        params.percussionType = document.getElementById("percussionType").value;
-        params.strikeVelocity = parseFloat(document.getElementById("strikeVelocity").value);
-        params.strikePosition = parseFloat(document.getElementById("strikePosition").value);
-        params.resonantModes = parseFloat(document.getElementById("resonantModes").value);
-      }
-    }
-  }
-  
-  // NEW: Enhanced noise parameters
-  if (soundType === "noise" || soundType === "custom") {
-    if (document.getElementById("noiseColor")) {
-      // ...existing noise parameter gathering...
-      
-      // Add enhanced parameters
-      if (document.getElementById("noiseModulation")) {
-        params.noiseModulation = parseFloat(document.getElementById("noiseModulation").value);
-        params.noiseModRate = parseFloat(document.getElementById("noiseModRate").value);
-        params.bandpassCenter = parseFloat(document.getElementById("bandpassCenter").value);
-        params.bandpassWidth = parseFloat(document.getElementById("bandpassWidth").value);
-        params.noiseQuantization = parseFloat(document.getElementById("noiseQuantization").value);
-      }
-    }
-  }
-  
-  // NEW: Enhanced mechanical parameters
-  if (soundType === "mechanical" || soundType === "custom") {
-    if (document.getElementById("rpm")) {
-      // ...existing mechanical parameter gathering...
-      
-      // Add enhanced parameters
-      if (document.getElementById("mechanicalType")) {
-        params.mechanicalType = document.getElementById("mechanicalType").value;
-        params.motorLoadFactor = parseFloat(document.getElementById("motorLoadFactor").value);
-        params.rpmFluctuation = parseFloat(document.getElementById("rpmFluctuation").value);
-        params.mechanicalResonance = parseFloat(document.getElementById("mechanicalResonance").value);
-        params.surfaceContact = parseFloat(document.getElementById("surfaceContact").value);
-      }
-    }
-  }
-  
-  // NEW: Enhanced formant parameters
-  if (soundType === "formant" || soundType === "custom") {
-    if (document.getElementById("formant1")) {
-      // ...existing formant parameter gathering...
-      
-      // Add enhanced parameters
-      if (document.getElementById("vocalPreset")) {
-        params.vocalPreset = document.getElementById("vocalPreset").value;
-        params.glottalOpenQuotient = parseFloat(document.getElementById("glottalOpenQuotient").value);
-        params.throatLength = parseFloat(document.getElementById("throatLength").value);
-        params.tonguePosition = parseFloat(document.getElementById("tonguePosition").value);
-        params.mouthOpening = parseFloat(document.getElementById("mouthOpening").value);
-      }
-    }
-  }
-
-  // Gather spatial parameters (common to all sounds)
-  params.refDistance = parseFloat(document.getElementById("refDistance").value);
-  params.rolloff = parseFloat(document.getElementById("rolloff").value);
-  params.coneInner = parseFloat(document.getElementById("coneInner").value);
-  params.coneOuter = parseFloat(document.getElementById("coneOuter").value);
-  params.coneOuterGain = parseFloat(document.getElementById("coneOuterGain").value);
 
   const paramString = JSON.stringify(params);
   
@@ -1815,4 +1655,341 @@ function randomizeParameters() {
   document.getElementById("coneOuterGain").value = getRandomInRange(0.05, 0.3).toFixed(2);
   
   document.getElementById('playStatus').textContent = "Parameters randomized! Generate a sound key to save them.";
+}
+
+// Define all available parameters by category
+const allParameters = {
+  basic: {
+    name: "Basic",
+    params: {
+      refDistance: "Reference Distance",
+      rolloff: "Rolloff Factor",
+      coneInner: "Cone Inner Angle",
+      coneOuter: "Cone Outer Angle",
+      coneOuterGain: "Cone Outer Gain"
+    }
+  },
+  wind: {
+    name: "Wind",
+    params: {
+      windSpeed: "Wind Speed",
+      windGustiness: "Wind Gustiness",
+      windDirection: "Wind Direction",
+      turbulence: "Turbulence",
+      groundMaterial: "Ground Material"
+    }
+  },
+  ocean: {
+    name: "Ocean",
+    params: {
+      waveHeight: "Wave Height",
+      waveFrequency: "Wave Frequency",
+      surfIntensity: "Surf Intensity",
+      oceanDepth: "Ocean Depth"
+    }
+  },
+  leaves: {
+    name: "Leaves",
+    params: {
+      rustleIntensity: "Rustle Intensity",
+      leafType: "Leaf Type",
+      leafDensity: "Leaf Density"
+    }
+  },
+  fire: {
+    name: "Fire",
+    params: {
+      fireIntensity: "Fire Intensity",
+      crackleFrequency: "Crackle Frequency",
+      crackleIntensity: "Crackle Intensity",
+      flickerSpeed: "Flicker Speed",
+      fuelType: "Fuel Type",
+      flameTemp: "Flame Temperature"
+    }
+  },
+  footsteps: {
+    name: "Footsteps",
+    params: {
+      footstepVolume: "Footstep Volume",
+      stepFrequency: "Step Frequency",
+      footwearType: "Footwear Type",
+      stepSurface: "Step Surface"
+    }
+  },
+  synthesizer: {
+    name: "Synthesizer",
+    params: {
+      oscType: "Oscillator Type",
+      oscFrequency: "Frequency",
+      oscDetune: "Detune",
+      harmonic1: "1st Harmonic",
+      harmonic2: "2nd Harmonic",
+      harmonic3: "3rd Harmonic",
+      noiseAmount: "Noise Amount",
+      lfoRate: "LFO Rate",
+      lfoDepth: "LFO Depth",
+      lfoTarget: "LFO Target",
+      filterType: "Filter Type",
+      filterCutoff: "Filter Cutoff",
+      filterResonance: "Filter Resonance",
+      envelopeAttack: "Attack Time",
+      envelopeRelease: "Release Time"
+    }
+  },
+  percussion: {
+    name: "Percussion",
+    params: {
+      impactSharpness: "Impact Sharpness",
+      bodyResonance: "Body Resonance",
+      decayLength: "Decay Length",
+      pitchBend: "Pitch Bend",
+      materialHardness: "Material Hardness",
+      materialDensity: "Material Density",
+      percussionType: "Percussion Type",
+      strikeVelocity: "Strike Velocity",
+      strikePosition: "Strike Position",
+      resonantModes: "Resonant Modes"
+    }
+  },
+  noise: {
+    name: "Noise",
+    params: {
+      noiseColor: "Noise Color",
+      noiseDensity: "Noise Density",
+      lowFreqContent: "Low Frequency Content",
+      highFreqContent: "High Frequency Content",
+      spectralTilt: "Spectral Tilt",
+      noiseModulation: "Modulation Amount",
+      noiseModRate: "Modulation Rate",
+      bandpassCenter: "Bandpass Center",
+      bandpassWidth: "Bandpass Width",
+      noiseQuantization: "Quantization"
+    }
+  },
+  mechanical: {
+    name: "Mechanical",
+    params: {
+      rpm: "RPM",
+      gearRatio: "Gear Ratio",
+      friction: "Friction",
+      metallic: "Metallic Quality",
+      mechanicalLooseness: "Mechanical Looseness",
+      mechanicalType: "Mechanism Type",
+      motorLoadFactor: "Load Factor",
+      rpmFluctuation: "RPM Fluctuation",
+      mechanicalResonance: "Resonance Frequency",
+      surfaceContact: "Surface Contact"
+    }
+  },
+  formant: {
+    name: "Formant",
+    params: {
+      formant1: "Formant 1",
+      formant2: "Formant 2",
+      formant3: "Formant 3",
+      breathiness: "Breathiness",
+      vocalTension: "Vocal Tension",
+      vibrato: "Vibrato Amount",
+      vibratoRate: "Vibrato Rate",
+      vocalPreset: "Vowel Preset",
+      glottalOpenQuotient: "Glottal Open Quotient",
+      throatLength: "Throat Length",
+      tonguePosition: "Tongue Position",
+      mouthOpening: "Mouth Opening"
+    }
+  }
+};
+
+// Store currently selected parameters
+let selectedParameters = new Set();
+
+/**
+ * Updates selected parameters based on the sound type
+ * @param {string} soundType - The selected sound type
+ */
+function updateSelectedParametersForType(soundType) {
+  // Clear currently selected parameters
+  selectedParameters.clear();
+  
+  // Always add basic spatial parameters
+  selectedParameters.add('refDistance');
+  selectedParameters.add('rolloff');
+  
+  // Add parameters specific to the sound type
+  if (soundType === 'wind' || soundType === 'custom') {
+    selectedParameters.add('windSpeed');
+    selectedParameters.add('windGustiness');
+    selectedParameters.add('turbulence');
+  }
+  
+  if (soundType === 'ocean' || soundType === 'custom') {
+    selectedParameters.add('waveHeight');
+    selectedParameters.add('waveFrequency');
+    selectedParameters.add('surfIntensity');
+  }
+  
+  if (soundType === 'leaves' || soundType === 'custom') {
+    selectedParameters.add('rustleIntensity');
+    selectedParameters.add('leafDensity');
+  }
+  
+  if (soundType === 'fire' || soundType === 'custom') {
+    selectedParameters.add('fireIntensity');
+    selectedParameters.add('crackleFrequency');
+    selectedParameters.add('crackleIntensity');
+  }
+  
+  if (soundType === 'footsteps' || soundType === 'custom') {
+    selectedParameters.add('footstepVolume');
+    selectedParameters.add('stepFrequency');
+  }
+  
+  if (soundType === 'synthesizer' || soundType === 'custom') {
+    selectedParameters.add('oscType');
+    selectedParameters.add('oscFrequency');
+    selectedParameters.add('harmonic1');
+    selectedParameters.add('lfoRate');
+  }
+  
+  if (soundType === 'percussion' || soundType === 'custom') {
+    selectedParameters.add('impactSharpness');
+    selectedParameters.add('bodyResonance');
+    selectedParameters.add('decayLength');
+  }
+  
+  if (soundType === 'noise' || soundType === 'custom') {
+    selectedParameters.add('noiseColor');
+    selectedParameters.add('noiseDensity');
+    selectedParameters.add('spectralTilt');
+  }
+  
+  if (soundType === 'mechanical' || soundType === 'custom') {
+    selectedParameters.add('rpm');
+    selectedParameters.add('friction');
+    selectedParameters.add('mechanicalLooseness');
+  }
+  
+  if (soundType === 'formant' || soundType === 'custom') {
+    selectedParameters.add('formant1');
+    selectedParameters.add('formant2');
+    selectedParameters.add('breathiness');
+    selectedParameters.add('vibrato');
+  }
+  
+  // Update the visual representation
+  updateParameterTags();
+}
+
+/**
+ * Updates the parameter tags based on selected parameters
+ */
+function updateParameterTags() {
+  const container = document.getElementById('selectedParameters');
+  container.innerHTML = '';
+  
+  selectedParameters.forEach(param => {
+    // Find the parameter name in our categories
+    let paramName = param;
+    for (const category in allParameters) {
+      if (allParameters[category].params[param]) {
+        paramName = allParameters[category].params[param];
+        break;
+      }
+    }
+    
+    const tag = document.createElement('div');
+    tag.className = 'param-tag';
+    tag.innerHTML = `
+      <span>${paramName}</span>
+      <span class="remove-tag" data-param="${param}">×</span>
+    `;
+    container.appendChild(tag);
+    
+    // Add click handler to remove tag
+    tag.querySelector('.remove-tag').addEventListener('click', function() {
+      const paramToRemove = this.getAttribute('data-param');
+      selectedParameters.delete(paramToRemove);
+      updateParameterTags();
+    });
+  });
+}
+
+/**
+ * Shows the parameter selection modal
+ */
+function showParameterModal() {
+  // Create modal elements
+  const overlay = document.createElement('div');
+  overlay.className = 'param-modal-overlay';
+  
+  const modal = document.createElement('div');
+  modal.className = 'param-modal';
+  
+  modal.innerHTML = `
+    <h3>Select Parameters</h3>
+    <div class="param-categories"></div>
+    <div class="param-modal-actions">
+      <button class="secondary-btn" id="cancelParams">Cancel</button>
+      <button class="primary-btn" id="confirmParams">Confirm</button>
+    </div>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Populate categories
+  const categoriesContainer = modal.querySelector('.param-categories');
+  
+  for (const catKey in allParameters) {
+    const category = allParameters[catKey];
+    
+    const categoryEl = document.createElement('div');
+    categoryEl.className = 'param-category';
+    
+    let categoryHTML = `<div class="param-category-title">${category.name}</div>`;
+    categoryHTML += '<div class="param-options">';
+    
+    for (const paramKey in category.params) {
+      const isChecked = selectedParameters.has(paramKey) ? 'checked' : '';
+      categoryHTML += `
+        <div class="param-option">
+          <input type="checkbox" id="param-${paramKey}" ${isChecked} data-param="${paramKey}">
+          <label for="param-${paramKey}">${category.params[paramKey]}</label>
+        </div>
+      `;
+    }
+    
+    categoryHTML += '</div>';
+    categoryEl.innerHTML = categoryHTML;
+    categoriesContainer.appendChild(categoryEl);
+  }
+  
+  // Add event handlers
+  document.getElementById('cancelParams').addEventListener('click', function() {
+    document.body.removeChild(overlay);
+  });
+  
+  document.getElementById('confirmParams').addEventListener('click', function() {
+    // Gather all selected parameters
+    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+    selectedParameters.clear();
+    
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        selectedParameters.add(checkbox.getAttribute('data-param'));
+      }
+    });
+    
+    updateParameterTags();
+    document.body.removeChild(overlay);
+  });
+}
+
+/**
+ * Checks if a parameter is selected
+ * @param {string} paramId - The parameter ID to check
+ * @returns {boolean} True if parameter is selected
+ */
+function isParameterSelected(paramId) {
+  return selectedParameters.has(paramId);
 }

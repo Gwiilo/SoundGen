@@ -384,3 +384,180 @@ button:disabled::before {
     margin: 5px 0;
   }
 }
+
+/* Parameter Selection Styling */
+.parameter-selection {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.parameter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.param-tag {
+  background: var(--field-bg);
+  border: 1px solid var(--accent-blue);
+  border-radius: 15px;
+  padding: 3px 10px;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.param-tag:hover {
+  background: var(--bg-tertiary);
+}
+
+.param-tag .remove-tag {
+  font-size: 0.9em;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  color: white;
+}
+
+.param-tag .remove-tag:hover {
+  background: var(--accent-blue-light);
+}
+
+.add-param-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: var(--accent-blue);
+  color: white;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.add-param-btn:hover {
+  background: var(--accent-blue-light);
+  transform: scale(1.1);
+}
+
+/* Parameter Selection Modal */
+.param-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(3px);
+}
+
+.param-modal {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.param-modal h3 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+.param-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.param-category {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.param-category-title {
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: var(--accent-blue);
+}
+
+.param-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 400px) {
+  .param-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.param-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.param-option:hover {
+  background: var(--field-bg);
+}
+
+.param-option input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.param-option label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.param-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.param-modal-actions button {
+  padding: 8px 15px;
+}
+
+/* Hide spinners on number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
