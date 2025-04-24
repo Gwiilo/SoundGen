@@ -31,6 +31,11 @@
               <option value="leaves">Tree Leaves Rustling</option>
               <option value="fire">Ambient Fire Burning</option>
               <option value="footsteps">Footsteps on Surface</option>
+              <option value="synthesizer">Synthesizer</option>
+              <option value="percussion">Percussion</option>
+              <option value="noise">Advanced Noise</option>
+              <option value="mechanical">Mechanical Sounds</option>
+              <option value="formant">Voice & Formant</option>
               <option value="custom">Custom Parameters</option>
             </select>
             <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
@@ -171,6 +176,302 @@
                   <option value="wood">Wood</option>
                   <option value="tile">Tile</option>
                 </select>
+              </div>
+            </fieldset>
+
+            <!-- SYNTHESIZER Parameters -->
+            <fieldset id="synthesizerParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Synthesizer <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="oscType">Oscillator Type:</label>
+                <select id="oscType" name="oscType">
+                  <option value="sine">Sine Wave</option>
+                  <option value="square">Square Wave</option>
+                  <option value="sawtooth">Sawtooth Wave</option>
+                  <option value="triangle">Triangle Wave</option>
+                  <option value="custom">Custom Waveform</option>
+                </select>
+                
+                <label for="oscFrequency">Base Frequency (20-2000Hz):</label>
+                <input type="range" id="oscFrequency" name="oscFrequency" min="20" max="2000" value="440" class="slider" oninput="updateParamOutput('oscFrequency')">
+                <span class="param-value" id="oscFrequencyOutput">440</span>
+                
+                <label for="oscDetune">Detune (±100 cents):</label>
+                <input type="range" id="oscDetune" name="oscDetune" min="-100" max="100" value="0" class="slider" oninput="updateParamOutput('oscDetune')">
+                <span class="param-value" id="oscDetuneOutput">0</span>
+                
+                <label for="harmonic1">1st Harmonic Level (0.0-1.0):</label>
+                <input type="range" id="harmonic1" name="harmonic1" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('harmonic1')">
+                <span class="param-value" id="harmonic1Output">0.5</span>
+                
+                <label for="harmonic2">2nd Harmonic Level (0.0-1.0):</label>
+                <input type="range" id="harmonic2" name="harmonic2" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('harmonic2')">
+                <span class="param-value" id="harmonic2Output">0.3</span>
+                
+                <label for="harmonic3">3rd Harmonic Level (0.0-1.0):</label>
+                <input type="range" id="harmonic3" name="harmonic3" step="0.01" min="0" max="1" value="0.1" class="slider" oninput="updateParamOutput('harmonic3')">
+                <span class="param-value" id="harmonic3Output">0.1</span>
+                
+                <label for="noiseAmount">Noise Amount (0.0-1.0):</label>
+                <input type="range" id="noiseAmount" name="noiseAmount" step="0.01" min="0" max="1" value="0.1" class="slider" oninput="updateParamOutput('noiseAmount')">
+                <span class="param-value" id="noiseAmountOutput">0.1</span>
+                
+                <label for="lfoRate">LFO Rate (0.1-20Hz):</label>
+                <input type="range" id="lfoRate" name="lfoRate" step="0.1" min="0.1" max="20" value="4" class="slider" oninput="updateParamOutput('lfoRate')">
+                <span class="param-value" id="lfoRateOutput">4</span>
+                
+                <label for="lfoDepth">LFO Depth (0.0-1.0):</label>
+                <input type="range" id="lfoDepth" name="lfoDepth" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('lfoDepth')">
+                <span class="param-value" id="lfoDepthOutput">0.2</span>
+                
+                <label for="lfoTarget">LFO Target:</label>
+                <select id="lfoTarget" name="lfoTarget">
+                  <option value="pitch">Pitch</option>
+                  <option value="amplitude">Amplitude</option>
+                  <option value="filter">Filter</option>
+                </select>
+                
+                <!-- Additional synthesizer parameters -->
+                <label for="filterType">Filter Type:</label>
+                <select id="filterType" name="filterType">
+                  <option value="lowpass">Low Pass</option>
+                  <option value="highpass">High Pass</option>
+                  <option value="bandpass">Band Pass</option>
+                  <option value="notch">Notch</option>
+                </select>
+                
+                <label for="filterCutoff">Filter Cutoff (50-8000Hz):</label>
+                <input type="range" id="filterCutoff" name="filterCutoff" min="50" max="8000" value="2000" class="slider" oninput="updateParamOutput('filterCutoff')">
+                <span class="param-value" id="filterCutoffOutput">2000</span>
+                
+                <label for="filterResonance">Filter Resonance (0.1-20):</label>
+                <input type="range" id="filterResonance" name="filterResonance" step="0.1" min="0.1" max="20" value="1" class="slider" oninput="updateParamOutput('filterResonance')">
+                <span class="param-value" id="filterResonanceOutput">1</span>
+                
+                <label for="envelopeAttack">Attack Time (0.001-2.0s):</label>
+                <input type="range" id="envelopeAttack" name="envelopeAttack" step="0.001" min="0.001" max="2" value="0.1" class="slider" oninput="updateParamOutput('envelopeAttack')">
+                <span class="param-value" id="envelopeAttackOutput">0.1</span>
+                
+                <label for="envelopeRelease">Release Time (0.001-5.0s):</label>
+                <input type="range" id="envelopeRelease" name="envelopeRelease" step="0.001" min="0.001" max="5" value="0.5" class="slider" oninput="updateParamOutput('envelopeRelease')">
+                <span class="param-value" id="envelopeReleaseOutput">0.5</span>
+              </div>
+            </fieldset>
+
+            <!-- PERCUSSION Parameters -->
+            <fieldset id="percussionParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Percussion <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="impactSharpness">Impact Sharpness (0.0-1.0):</label>
+                <input type="range" id="impactSharpness" name="impactSharpness" step="0.01" min="0" max="1" value="0.8" class="slider" oninput="updateParamOutput('impactSharpness')">
+                <span class="param-value" id="impactSharpnessOutput">0.8</span>
+                
+                <label for="bodyResonance">Body Resonance (0.0-1.0):</label>
+                <input type="range" id="bodyResonance" name="bodyResonance" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('bodyResonance')">
+                <span class="param-value" id="bodyResonanceOutput">0.5</span>
+                
+                <label for="decayLength">Decay Length (0.0-1.0):</label>
+                <input type="range" id="decayLength" name="decayLength" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('decayLength')">
+                <span class="param-value" id="decayLengthOutput">0.3</span>
+                
+                <label for="pitchBend">Pitch Bend (0.0-1.0):</label>
+                <input type="range" id="pitchBend" name="pitchBend" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('pitchBend')">
+                <span class="param-value" id="pitchBendOutput">0.2</span>
+                
+                <label for="materialHardness">Material Hardness (0.0-1.0):</label>
+                <input type="range" id="materialHardness" name="materialHardness" step="0.01" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('materialHardness')">
+                <span class="param-value" id="materialHardnessOutput">0.7</span>
+                
+                <label for="materialDensity">Material Density (0.0-1.0):</label>
+                <input type="range" id="materialDensity" name="materialDensity" step="0.01" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('materialDensity')">
+                <span class="param-value" id="materialDensityOutput">0.6</span>
+                
+                <!-- Additional percussion parameters -->
+                <label for="percussionType">Percussion Type:</label>
+                <select id="percussionType" name="percussionType">
+                  <option value="drum">Drum</option>
+                  <option value="woodblock">Woodblock</option>
+                  <option value="metal">Metal</option>
+                  <option value="membrane">Membrane</option>
+                  <option value="glass">Glass</option>
+                </select>
+                
+                <label for="strikeVelocity">Strike Velocity (0.1-1.0):</label>
+                <input type="range" id="strikeVelocity" name="strikeVelocity" step="0.01" min="0.1" max="1" value="0.7" class="slider" oninput="updateParamOutput('strikeVelocity')">
+                <span class="param-value" id="strikeVelocityOutput">0.7</span>
+                
+                <label for="strikePosition">Strike Position (0.0-1.0):</label>
+                <input type="range" id="strikePosition" name="strikePosition" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('strikePosition')">
+                <span class="param-value" id="strikePositionOutput">0.5</span>
+                
+                <label for="resonantModes">Resonant Modes (1-5):</label>
+                <input type="range" id="resonantModes" name="resonantModes" step="1" min="1" max="5" value="3" class="slider" oninput="updateParamOutput('resonantModes')">
+                <span class="param-value" id="resonantModesOutput">3</span>
+              </div>
+            </fieldset>
+
+            <!-- NOISE Parameters -->
+            <fieldset id="noiseParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Advanced Noise <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="noiseColor">Noise Color:</label>
+                <select id="noiseColor" name="noiseColor">
+                  <option value="white">White Noise</option>
+                  <option value="pink">Pink Noise</option>
+                  <option value="brown">Brown/Red Noise</option>
+                  <option value="blue">Blue Noise</option>
+                  <option value="violet">Violet Noise</option>
+                  <option value="grey">Grey Noise</option>
+                </select>
+                
+                <label for="noiseDensity">Noise Density (0.0-1.0):</label>
+                <input type="range" id="noiseDensity" name="noiseDensity" step="0.01" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('noiseDensity')">
+                <span class="param-value" id="noiseDensityOutput">0.7</span>
+                
+                <label for="lowFreqContent">Low Frequency Content (0.0-1.0):</label>
+                <input type="range" id="lowFreqContent" name="lowFreqContent" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('lowFreqContent')">
+                <span class="param-value" id="lowFreqContentOutput">0.5</span>
+                
+                <label for="highFreqContent">High Frequency Content (0.0-1.0):</label>
+                <input type="range" id="highFreqContent" name="highFreqContent" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('highFreqContent')">
+                <span class="param-value" id="highFreqContentOutput">0.5</span>
+                
+                <label for="spectralTilt">Spectral Tilt (-12 to +12 dB/oct):</label>
+                <input type="range" id="spectralTilt" name="spectralTilt" step="1" min="-12" max="12" value="-3" class="slider" oninput="updateParamOutput('spectralTilt')">
+                <span class="param-value" id="spectralTiltOutput">-3</span>
+                
+                <!-- Additional noise parameters -->
+                <label for="noiseModulation">Modulation Amount (0.0-1.0):</label>
+                <input type="range" id="noiseModulation" name="noiseModulation" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('noiseModulation')">
+                <span class="param-value" id="noiseModulationOutput">0.2</span>
+                
+                <label for="noiseModRate">Modulation Rate (0.1-10Hz):</label>
+                <input type="range" id="noiseModRate" name="noiseModRate" step="0.1" min="0.1" max="10" value="1.0" class="slider" oninput="updateParamOutput('noiseModRate')">
+                <span class="param-value" id="noiseModRateOutput">1.0</span>
+                
+                <label for="bandpassCenter">Bandpass Center (100-8000Hz):</label>
+                <input type="range" id="bandpassCenter" name="bandpassCenter" min="100" max="8000" value="1000" class="slider" oninput="updateParamOutput('bandpassCenter')">
+                <span class="param-value" id="bandpassCenterOutput">1000</span>
+                
+                <label for="bandpassWidth">Bandpass Width (50-5000Hz):</label>
+                <input type="range" id="bandpassWidth" name="bandpassWidth" min="50" max="5000" value="500" class="slider" oninput="updateParamOutput('bandpassWidth')">
+                <span class="param-value" id="bandpassWidthOutput">500</span>
+                
+                <label for="noiseQuantization">Quantization (bits 1-16):</label>
+                <input type="range" id="noiseQuantization" name="noiseQuantization" step="1" min="1" max="16" value="16" class="slider" oninput="updateParamOutput('noiseQuantization')">
+                <span class="param-value" id="noiseQuantizationOutput">16</span>
+              </div>
+            </fieldset>
+
+            <!-- MECHANICAL Parameters -->
+            <fieldset id="mechanicalParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Mechanical Sounds <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="rpm">RPM (60-1200):</label>
+                <input type="range" id="rpm" name="rpm" min="60" max="1200" value="600" class="slider" oninput="updateParamOutput('rpm')">
+                <span class="param-value" id="rpmOutput">600</span>
+                
+                <label for="gearRatio">Gear Ratio (0.1-2.0):</label>
+                <input type="range" id="gearRatio" name="gearRatio" step="0.05" min="0.1" max="2" value="0.5" class="slider" oninput="updateParamOutput('gearRatio')">
+                <span class="param-value" id="gearRatioOutput">0.5</span>
+                
+                <label for="friction">Friction (0.0-1.0):</label>
+                <input type="range" id="friction" name="friction" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('friction')">
+                <span class="param-value" id="frictionOutput">0.3</span>
+                
+                <label for="metallic">Metallic Quality (0.0-1.0):</label>
+                <input type="range" id="metallic" name="metallic" step="0.01" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('metallic')">
+                <span class="param-value" id="metallicOutput">0.7</span>
+                
+                <label for="mechanicalLooseness">Mechanical Looseness (0.0-1.0):</label>
+                <input type="range" id="mechanicalLooseness" name="mechanicalLooseness" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('mechanicalLooseness')">
+                <span class="param-value" id="mechanicalLoosenessOutput">0.3</span>
+                
+                <!-- Additional mechanical parameters -->
+                <label for="mechanicalType">Mechanism Type:</label>
+                <select id="mechanicalType" name="mechanicalType">
+                  <option value="motor">Electric Motor</option>
+                  <option value="engine">Combustion Engine</option>
+                  <option value="gears">Gear System</option>
+                  <option value="belt">Belt Drive</option>
+                  <option value="hydraulic">Hydraulic</option>
+                </select>
+                
+                <label for="motorLoadFactor">Load Factor (0.0-1.0):</label>
+                <input type="range" id="motorLoadFactor" name="motorLoadFactor" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('motorLoadFactor')">
+                <span class="param-value" id="motorLoadFactorOutput">0.5</span>
+                
+                <label for="rpmFluctuation">RPM Fluctuation (0.0-1.0):</label>
+                <input type="range" id="rpmFluctuation" name="rpmFluctuation" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('rpmFluctuation')">
+                <span class="param-value" id="rpmFluctuationOutput">0.2</span>
+                
+                <label for="mechanicalResonance">Resonance Frequency (50-2000Hz):</label>
+                <input type="range" id="mechanicalResonance" name="mechanicalResonance" min="50" max="2000" value="500" class="slider" oninput="updateParamOutput('mechanicalResonance')">
+                <span class="param-value" id="mechanicalResonanceOutput">500</span>
+                
+                <label for="surfaceContact">Surface Contact (0.0-1.0):</label>
+                <input type="range" id="surfaceContact" name="surfaceContact" step="0.01" min="0" max="1" value="0.4" class="slider" oninput="updateParamOutput('surfaceContact')">
+                <span class="param-value" id="surfaceContactOutput">0.4</span>
+              </div>
+            </fieldset>
+
+            <!-- FORMANT Parameters -->
+            <fieldset id="formantParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Voice & Formant <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="formant1">Formant 1 (200-800Hz):</label>
+                <input type="range" id="formant1" name="formant1" min="200" max="800" value="500" class="slider" oninput="updateParamOutput('formant1')">
+                <span class="param-value" id="formant1Output">500</span>
+                
+                <label for="formant2">Formant 2 (800-2400Hz):</label>
+                <input type="range" id="formant2" name="formant2" min="800" max="2400" value="1500" class="slider" oninput="updateParamOutput('formant2')">
+                <span class="param-value" id="formant2Output">1500</span>
+                
+                <label for="formant3">Formant 3 (1500-4000Hz):</label>
+                <input type="range" id="formant3" name="formant3" min="1500" max="4000" value="2500" class="slider" oninput="updateParamOutput('formant3')">
+                <span class="param-value" id="formant3Output">2500</span>
+                
+                <label for="breathiness">Breathiness (0.0-1.0):</label>
+                <input type="range" id="breathiness" name="breathiness" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('breathiness')">
+                <span class="param-value" id="breathinessOutput">0.3</span>
+                
+                <label for="vocalTension">Vocal Tension (0.0-1.0):</label>
+                <input type="range" id="vocalTension" name="vocalTension" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('vocalTension')">
+                <span class="param-value" id="vocalTensionOutput">0.5</span>
+                
+                <label for="vibrato">Vibrato Amount (0.0-1.0):</label>
+                <input type="range" id="vibrato" name="vibrato" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('vibrato')">
+                <span class="param-value" id="vibratoOutput">0.2</span>
+                
+                <label for="vibratoRate">Vibrato Rate (0.5-10Hz):</label>
+                <input type="range" id="vibratoRate" name="vibratoRate" step="0.1" min="0.5" max="10" value="5" class="slider" oninput="updateParamOutput('vibratoRate')">
+                <span class="param-value" id="vibratoRateOutput">5</span>
+                
+                <!-- Additional formant parameters -->
+                <label for="vocalPreset">Vowel Preset:</label>
+                <select id="vocalPreset" name="vocalPreset">
+                  <option value="a">A (as in "father")</option>
+                  <option value="e">E (as in "bed")</option>
+                  <option value="i">I (as in "see")</option>
+                  <option value="o">O (as in "go")</option>
+                  <option value="u">U (as in "soon")</option>
+                </select>
+                
+                <label for="glottalOpenQuotient">Glottal Open Quotient (0.1-0.9):</label>
+                <input type="range" id="glottalOpenQuotient" name="glottalOpenQuotient" step="0.01" min="0.1" max="0.9" value="0.6" class="slider" oninput="updateParamOutput('glottalOpenQuotient')">
+                <span class="param-value" id="glottalOpenQuotientOutput">0.6</span>
+                
+                <label for="throatLength">Throat Length (0.5-1.5):</label>
+                <input type="range" id="throatLength" name="throatLength" step="0.01" min="0.5" max="1.5" value="1.0" class="slider" oninput="updateParamOutput('throatLength')">
+                <span class="param-value" id="throatLengthOutput">1.0</span>
+                
+                <label for="tonguePosition">Tongue Position (0.0-1.0):</label>
+                <input type="range" id="tonguePosition" name="tonguePosition" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('tonguePosition')">
+                <span class="param-value" id="tonguePositionOutput">0.5</span>
+                
+                <label for="mouthOpening">Mouth Opening (0.0-1.0):</label>
+                <input type="range" id="mouthOpening" name="mouthOpening" step="0.01" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('mouthOpening')">
+                <span class="param-value" id="mouthOpeningOutput">0.7</span>
               </div>
             </fieldset>
 

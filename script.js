@@ -134,6 +134,49 @@ const presetValues = {
     stepFrequency: 100,
     footwearType: 'sneakers',
     stepSurface: 'grass',
+  },
+  synthesizer: {
+    oscType: 'sine',
+    oscFrequency: 440,
+    oscDetune: 0,
+    harmonic1: 0.5,
+    harmonic2: 0.3,
+    harmonic3: 0.1,
+    noiseAmount: 0.1,
+    lfoRate: 4,
+    lfoDepth: 0.2,
+    lfoTarget: 'pitch'
+  },
+  percussion: {
+    impactSharpness: 0.8,
+    bodyResonance: 0.5,
+    decayLength: 0.3,
+    pitchBend: 0.2,
+    materialHardness: 0.7,
+    materialDensity: 0.6
+  },
+  noise: {
+    noiseColor: 'white',
+    noiseDensity: 0.7,
+    lowFreqContent: 0.5,
+    highFreqContent: 0.5,
+    spectralTilt: -3
+  },
+  mechanical: {
+    rpm: 600,
+    gearRatio: 0.5,
+    friction: 0.3,
+    metallic: 0.7,
+    mechanicalLooseness: 0.3
+  },
+  formant: {
+    formant1: 500,
+    formant2: 1500,
+    formant3: 2500,
+    breathiness: 0.3,
+    vocalTension: 0.5,
+    vibrato: 0.2,
+    vibratoRate: 5
   }
 };
 
@@ -348,6 +391,159 @@ function generateSoundKey() {
     params.stepFrequency = parseFloat(document.getElementById("stepFrequency").value);
     params.footwearType = document.getElementById("footwearType").value;
     params.stepSurface = document.getElementById("stepSurface").value;
+  }
+
+  // NEW: Synthesizer parameters
+  if (soundType === "synthesizer" || soundType === "custom") {
+    if (document.getElementById("oscType")) {
+      params.oscType = document.getElementById("oscType").value;
+      params.oscFrequency = parseFloat(document.getElementById("oscFrequency").value);
+      params.oscDetune = parseFloat(document.getElementById("oscDetune").value);
+      params.harmonic1 = parseFloat(document.getElementById("harmonic1").value);
+      params.harmonic2 = parseFloat(document.getElementById("harmonic2").value);
+      params.harmonic3 = parseFloat(document.getElementById("harmonic3").value);
+      params.noiseAmount = parseFloat(document.getElementById("noiseAmount").value);
+    }
+    
+    // LFO parameters if available
+    if (document.getElementById("lfoRate")) {
+      params.lfoRate = parseFloat(document.getElementById("lfoRate").value);
+      params.lfoDepth = parseFloat(document.getElementById("lfoDepth").value);
+      params.lfoTarget = document.getElementById("lfoTarget").value;
+    }
+    
+    // Filter parameters if available
+    if (document.getElementById("filterType")) {
+      params.filterType = document.getElementById("filterType").value;
+      params.filterCutoff = parseFloat(document.getElementById("filterCutoff").value);
+      params.filterResonance = parseFloat(document.getElementById("filterResonance").value);
+    }
+  }
+  
+  // NEW: Percussion parameters
+  if (soundType === "percussion" || soundType === "custom") {
+    if (document.getElementById("impactSharpness")) {
+      params.impactSharpness = parseFloat(document.getElementById("impactSharpness").value);
+      params.bodyResonance = parseFloat(document.getElementById("bodyResonance").value);
+      params.decayLength = parseFloat(document.getElementById("decayLength").value);
+      params.pitchBend = parseFloat(document.getElementById("pitchBend").value);
+      params.materialHardness = parseFloat(document.getElementById("materialHardness").value);
+      params.materialDensity = parseFloat(document.getElementById("materialDensity").value);
+    }
+  }
+  
+  // NEW: Noise parameters
+  if (soundType === "noise" || soundType === "custom") {
+    if (document.getElementById("noiseColor")) {
+      params.noiseColor = document.getElementById("noiseColor").value;
+      params.noiseDensity = parseFloat(document.getElementById("noiseDensity").value);
+      params.lowFreqContent = parseFloat(document.getElementById("lowFreqContent").value);
+      params.highFreqContent = parseFloat(document.getElementById("highFreqContent").value);
+      params.spectralTilt = parseFloat(document.getElementById("spectralTilt").value);
+    }
+  }
+  
+  // NEW: Mechanical parameters
+  if (soundType === "mechanical" || soundType === "custom") {
+    if (document.getElementById("rpm")) {
+      params.rpm = parseFloat(document.getElementById("rpm").value);
+      params.gearRatio = parseFloat(document.getElementById("gearRatio").value);
+      params.friction = parseFloat(document.getElementById("friction").value);
+      params.metallic = parseFloat(document.getElementById("metallic").value);
+      params.mechanicalLooseness = parseFloat(document.getElementById("mechanicalLooseness").value);
+    }
+  }
+  
+  // NEW: Formant parameters
+  if (soundType === "formant" || soundType === "custom") {
+    if (document.getElementById("formant1")) {
+      params.formant1 = parseFloat(document.getElementById("formant1").value);
+      params.formant2 = parseFloat(document.getElementById("formant2").value);
+      params.formant3 = parseFloat(document.getElementById("formant3").value);
+      params.breathiness = parseFloat(document.getElementById("breathiness").value);
+      params.vocalTension = parseFloat(document.getElementById("vocalTension").value);
+      params.vibrato = parseFloat(document.getElementById("vibrato").value);
+      params.vibratoRate = parseFloat(document.getElementById("vibratoRate").value);
+    }
+  }
+
+  // NEW: Enhanced synthesizer parameters
+  if (soundType === "synthesizer" || soundType === "custom") {
+    if (document.getElementById("oscType")) {
+      // ...existing synth parameter gathering...
+
+      // Add enhanced parameters
+      if (document.getElementById("filterType")) {
+        params.filterType = document.getElementById("filterType").value;
+        params.filterCutoff = parseFloat(document.getElementById("filterCutoff").value);
+        params.filterResonance = parseFloat(document.getElementById("filterResonance").value);
+        params.envelopeAttack = parseFloat(document.getElementById("envelopeAttack").value);
+        params.envelopeRelease = parseFloat(document.getElementById("envelopeRelease").value);
+      }
+    }
+  }
+  
+  // NEW: Enhanced percussion parameters
+  if (soundType === "percussion" || soundType === "custom") {
+    if (document.getElementById("impactSharpness")) {
+      // ...existing percussion parameter gathering...
+      
+      // Add enhanced parameters
+      if (document.getElementById("percussionType")) {
+        params.percussionType = document.getElementById("percussionType").value;
+        params.strikeVelocity = parseFloat(document.getElementById("strikeVelocity").value);
+        params.strikePosition = parseFloat(document.getElementById("strikePosition").value);
+        params.resonantModes = parseFloat(document.getElementById("resonantModes").value);
+      }
+    }
+  }
+  
+  // NEW: Enhanced noise parameters
+  if (soundType === "noise" || soundType === "custom") {
+    if (document.getElementById("noiseColor")) {
+      // ...existing noise parameter gathering...
+      
+      // Add enhanced parameters
+      if (document.getElementById("noiseModulation")) {
+        params.noiseModulation = parseFloat(document.getElementById("noiseModulation").value);
+        params.noiseModRate = parseFloat(document.getElementById("noiseModRate").value);
+        params.bandpassCenter = parseFloat(document.getElementById("bandpassCenter").value);
+        params.bandpassWidth = parseFloat(document.getElementById("bandpassWidth").value);
+        params.noiseQuantization = parseFloat(document.getElementById("noiseQuantization").value);
+      }
+    }
+  }
+  
+  // NEW: Enhanced mechanical parameters
+  if (soundType === "mechanical" || soundType === "custom") {
+    if (document.getElementById("rpm")) {
+      // ...existing mechanical parameter gathering...
+      
+      // Add enhanced parameters
+      if (document.getElementById("mechanicalType")) {
+        params.mechanicalType = document.getElementById("mechanicalType").value;
+        params.motorLoadFactor = parseFloat(document.getElementById("motorLoadFactor").value);
+        params.rpmFluctuation = parseFloat(document.getElementById("rpmFluctuation").value);
+        params.mechanicalResonance = parseFloat(document.getElementById("mechanicalResonance").value);
+        params.surfaceContact = parseFloat(document.getElementById("surfaceContact").value);
+      }
+    }
+  }
+  
+  // NEW: Enhanced formant parameters
+  if (soundType === "formant" || soundType === "custom") {
+    if (document.getElementById("formant1")) {
+      // ...existing formant parameter gathering...
+      
+      // Add enhanced parameters
+      if (document.getElementById("vocalPreset")) {
+        params.vocalPreset = document.getElementById("vocalPreset").value;
+        params.glottalOpenQuotient = parseFloat(document.getElementById("glottalOpenQuotient").value);
+        params.throatLength = parseFloat(document.getElementById("throatLength").value);
+        params.tonguePosition = parseFloat(document.getElementById("tonguePosition").value);
+        params.mouthOpening = parseFloat(document.getElementById("mouthOpening").value);
+      }
+    }
   }
 
   // Gather spatial parameters (common to all sounds)
@@ -590,6 +786,379 @@ const SoundGenerator = {
       data[i] = Math.sin(2 * Math.PI * 150 * t) * env * (params.footstepVolume || 0.5);
     }
     return buffer;
+  },
+
+  // SYNTHESIZER buffer - creates complex waveforms with harmonics
+  createSynthBuffer: function(audioCtx, params) {
+    try {
+      const duration = 4;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Get parameters with defaults
+      const oscType = params.oscType || 'sine';
+      const frequency = params.oscFrequency || 440;
+      const detune = params.oscDetune || 0;
+      const detuneRatio = Math.pow(2, detune / 1200); // Convert cents to ratio
+      const adjustedFreq = frequency * detuneRatio;
+      
+      // Harmonics strengths
+      const h1 = params.harmonic1 || 0.5;
+      const h2 = params.harmonic2 || 0.3;
+      const h3 = params.harmonic3 || 0.1;
+      
+      // Noise amount
+      const noiseAmt = params.noiseAmount || 0.1;
+      
+      // LFO parameters if available
+      const lfoRate = params.lfoRate || 0;
+      const lfoDepth = params.lfoDepth || 0;
+      const lfoTarget = params.lfoTarget || 'pitch';
+      
+      // Generate the waveform
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Apply LFO to frequency if needed
+        let freqMod = adjustedFreq;
+        if (lfoTarget === 'pitch' && lfoRate > 0) {
+          const lfo = Math.sin(2 * Math.PI * lfoRate * t);
+          freqMod = adjustedFreq * (1 + lfo * lfoDepth * 0.1); // 10% max deviation
+        }
+        
+        // Base oscillator
+        let sample = 0;
+        if (oscType === 'sine') {
+          sample = Math.sin(2 * Math.PI * freqMod * t);
+        } else if (oscType === 'square') {
+          sample = Math.sign(Math.sin(2 * Math.PI * freqMod * t));
+        } else if (oscType === 'sawtooth') {
+          sample = ((t * freqMod) % 1) * 2 - 1;
+        } else if (oscType === 'triangle') {
+          sample = Math.abs(((t * freqMod) % 1) * 2 - 1) * 2 - 1;
+        }
+        
+        // Add harmonics
+        if (h1 > 0) sample += h1 * Math.sin(2 * Math.PI * freqMod * 2 * t); 
+        if (h2 > 0) sample += h2 * Math.sin(2 * Math.PI * freqMod * 3 * t);
+        if (h3 > 0) sample += h3 * Math.sin(2 * Math.PI * freqMod * 4 * t);
+        
+        // Normalize
+        const maxAmplitude = 1 + h1 + h2 + h3;
+        sample /= maxAmplitude;
+        
+        // Add noise if specified
+        if (noiseAmt > 0) {
+          const noise = (Math.random() * 2 - 1) * noiseAmt;
+          sample = sample * (1 - noiseAmt) + noise;
+        }
+        
+        // Apply amplitude LFO if needed
+        if (lfoTarget === 'amplitude' && lfoRate > 0) {
+          const lfo = 0.5 * (1 + Math.sin(2 * Math.PI * lfoRate * t));
+          sample *= 1 - (lfoDepth * (1 - lfo));
+        }
+        
+        data[i] = sample;
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating synth buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 2);
+    }
+  },
+  
+  // PERCUSSION buffer - creates impact and resonance sounds
+  createPercussionBuffer: function(audioCtx, params) {
+    try {
+      const duration = 2; // Maximum duration
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Get parameters
+      const impactSharpness = params.impactSharpness || 0.8;
+      const bodyResonance = params.bodyResonance || 0.5;
+      const decayLength = params.decayLength || 0.3;
+      const pitchBend = params.pitchBend || 0.2;
+      const materialHardness = params.materialHardness || 0.7;
+      const materialDensity = params.materialDensity || 0.6;
+      
+      // Calculate sound parameters
+      const baseFreq = 100 + materialHardness * 400; // 100-500Hz
+      const decayTime = 0.1 + decayLength * 1.9; // 0.1-2s
+      const attackTime = Math.max(0.001, 0.02 * (1 - impactSharpness));
+      
+      // Generate percussion sound
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Skip if beyond decay time
+        if (t > decayTime) {
+          data[i] = 0;
+          continue;
+        }
+        
+        // Calculate amplitude envelope
+        let envelope;
+        if (t < attackTime) {
+          envelope = t / attackTime; // Linear attack
+        } else {
+          envelope = Math.exp(-(t - attackTime) / (decayTime * materialDensity));
+        }
+        
+        // Calculate pitch bend
+        const freqMod = baseFreq * (1 - (pitchBend * t / decayTime));
+        
+        // Generate main impact sound
+        let impact = Math.sin(2 * Math.PI * freqMod * t);
+        
+        // Add higher frequency components for harder materials
+        if (materialHardness > 0.3) {
+          impact += materialHardness * Math.sin(2 * Math.PI * freqMod * 2.7 * t) * 0.5;
+        }
+        
+        // Add body resonance
+        let resonance = 0;
+        if (bodyResonance > 0) {
+          const resFreq1 = baseFreq * 1.5;
+          const resFreq2 = baseFreq * 2.3;
+          resonance = bodyResonance * (
+            Math.sin(2 * Math.PI * resFreq1 * t) * Math.exp(-t / (decayTime * 1.2)) +
+            Math.sin(2 * Math.PI * resFreq2 * t) * Math.exp(-t / (decayTime * 0.8)) * 0.6
+          );
+        }
+        
+        // Combine impact and resonance
+        data[i] = (impact * (1 - bodyResonance/2) + resonance) * envelope;
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating percussion buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 1);
+    }
+  },
+  
+  // COLORED NOISE buffer - different types of noise with spectral shaping
+  createColoredNoiseBuffer: function(audioCtx, params) {
+    try {
+      const duration = 4;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Get parameters
+      const noiseColor = params.noiseColor || 'white';
+      const noiseDensity = params.noiseDensity || 0.7;
+      const lowFreqContent = params.lowFreqContent || 0.5;
+      const highFreqContent = params.highFreqContent || 0.5;
+      const spectralTilt = params.spectralTilt || -3; // dB/octave
+      
+      // Previous samples for filtering
+      let lastSample = 0;
+      let lastLastSample = 0;
+      
+      // Generate different colored noise
+      for (let i = 0; i < bufferSize; i++) {
+        // Base white noise
+        let noise = Math.random() * 2 - 1;
+        
+        // Apply color filtering
+        switch (noiseColor) {
+          case 'pink': // Pink noise (-3 dB/octave)
+            noise = (noise * 0.7 + lastSample * 0.3);
+            break;
+          case 'brown': // Brown/Red noise (-6 dB/octave)
+            noise = (noise * 0.5 + lastSample * 0.5);
+            break;
+          case 'blue': // Blue noise (+3 dB/octave)
+            noise = noise - (lastSample * 0.3);
+            break;
+          case 'white': // White noise (flat spectrum)
+          default:
+            // No additional filtering
+            break;
+        }
+        
+        // Apply custom spectral tilt
+        if (spectralTilt !== 0) {
+          const tiltFactor = Math.pow(10, spectralTilt / 20); // Convert dB to factor
+          noise = noise * tiltFactor + lastSample * (1 - tiltFactor);
+        }
+        
+        // Apply low/high frequency balance
+        let lowNoise = (noise + lastSample + lastLastSample) / 3; // Simple low-pass
+        let highNoise = noise - lastSample; // Simple high-pass
+        
+        // Mix according to parameters
+        noise = lowNoise * lowFreqContent + highNoise * highFreqContent;
+        
+        // Store filtered result and update previous samples
+        data[i] = noise * noiseDensity;
+        lastLastSample = lastSample;
+        lastSample = noise;
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating colored noise buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 2);
+    }
+  },
+  
+  // MECHANICAL buffer - create mechanical movement sounds
+  createMechanicalBuffer: function(audioCtx, params) {
+    try {
+      const duration = 4;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Get parameters
+      const rpm = params.rpm || 600; // Rotations per minute
+      const frequency = rpm / 60; // Convert to Hz
+      const gearRatio = params.gearRatio || 0.5;
+      const friction = params.friction || 0.3;
+      const metallic = params.metallic || 0.7;
+      const looseness = params.mechanicalLooseness || 0.3;
+      
+      // Generate mechanical sound
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Basic rotation
+        let motorSound = Math.sin(2 * Math.PI * frequency * t);
+        
+        // Add gear meshing at higher frequency
+        const gearFreq = frequency / gearRatio;
+        motorSound += Math.sin(2 * Math.PI * gearFreq * t) * 0.7;
+        
+        // Add irregularities based on looseness
+        if (looseness > 0) {
+          const looseFreq = frequency * 2;
+          const phaseVar = Math.sin(2 * Math.PI * looseFreq * t + Math.random() * looseness);
+          motorSound += phaseVar * looseness * 0.5;
+        }
+        
+        // Add friction noise
+        if (friction > 0) {
+          motorSound += (Math.random() * 2 - 1) * friction;
+        }
+        
+        // Add metallic resonances
+        if (metallic > 0) {
+          const resonances = [frequency * 4, frequency * 6.7, frequency * 9.2];
+          let metallicSound = 0;
+          resonances.forEach((resFreq, idx) => {
+            metallicSound += Math.sin(2 * Math.PI * resFreq * t) * 0.2 * metallic / (idx + 1);
+          });
+          motorSound += metallicSound;
+        }
+        
+        data[i] = motorSound * 0.3; // Reduce amplitude to avoid clipping
+      }
+      
+      // Final normalization
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating mechanical buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 2);
+    }
+  },
+  
+  // FORMANT buffer - creates vowel-like sounds using formant synthesis
+  createFormantBuffer: function(audioCtx, params) {
+    try {
+      const duration = 3;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Get parameters
+      const formant1 = params.formant1 || 500;
+      const formant2 = params.formant2 || 1500;
+      const formant3 = params.formant3 || 2500;
+      const breathiness = params.breathiness || 0.3;
+      const tension = params.vocalTension || 0.5;
+      const vibrato = params.vibrato || 0.2;
+      const vibratoRate = params.vibratoRate || 5;
+      const baseFreq = 120;
+      
+      // Create bandpass filters for formants
+      const createFormant = (freq, t, q) => {
+        const bandWidth = freq / q;
+        const formantEnv = Math.exp(-t * 2);
+        return Math.sin(2 * Math.PI * freq * t) * formantEnv;
+      };
+      
+      // Generate formant sound
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Apply vibrato to base frequency
+        let freqMod = baseFreq;
+        if (vibrato > 0) {
+          freqMod *= 1 + Math.sin(2 * Math.PI * vibratoRate * t) * vibrato * 0.1;
+        }
+        
+        // Generate glottal pulse
+        let glottalPulse;
+        if (tension < 0.5) {
+          // More relaxed vocal cords - softer tone
+          glottalPulse = Math.sin(2 * Math.PI * freqMod * t);
+        } else {
+          // More tense vocal cords - richer harmonics
+          const saw = ((t * freqMod) % 1) * 2 - 1;
+          const sine = Math.sin(2 * Math.PI * freqMod * t);
+          glottalPulse = sine * (1 - tension) + saw * tension;
+        }
+        
+        // Apply formants
+        const f1 = createFormant(formant1, t, 5);
+        const f2 = createFormant(formant2, t, 7) * 0.5;
+        const f3 = createFormant(formant3, t, 9) * 0.25;
+        
+        // Mix glottal pulse and formants
+        let voice = glottalPulse * 0.3 + f1 * 0.4 + f2 * 0.2 + f3 * 0.1;
+        
+        // Add breathiness
+        if (breathiness > 0) {
+          const breath = (Math.random() * 2 - 1) * breathiness;
+          voice = voice * (1 - breathiness*0.5) + breath;
+        }
+        
+        data[i] = voice;
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating formant buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 1);
+    }
   }
 };
 
@@ -651,9 +1220,35 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
     case "footsteps":
       buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
       break;
+    // New sound types
+    case "synthesizer":
+      buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+      break;
+    case "percussion":
+      buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+      break;
+    case "noise":
+      buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+      break;
+    case "mechanical":
+      buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+      break;
+    case "formant":
+      buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+      break;
     case "custom":
       // For custom, determine which buffer to use based on parameters
-      if (params.windSpeed !== undefined) {
+      if (params.oscType !== undefined) {
+        buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+      } else if (params.impactSharpness !== undefined) {
+        buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+      } else if (params.noiseColor !== undefined) {
+        buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+      } else if (params.rpm !== undefined) {
+        buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+      } else if (params.formant1 !== undefined) {
+        buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+      } else if (params.windSpeed !== undefined) {
         buffer = SoundGenerator.createWindBuffer(audioCtx, params);
       } else if (params.waveHeight !== undefined) {
         buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
@@ -687,7 +1282,7 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
 
   // Set buffer and looping
   positionalAudio.setBuffer(buffer);
-  if (["wind", "fire", "ocean"].includes(params.soundType)) {
+  if (["wind", "fire", "ocean", "noise", "mechanical"].includes(params.soundType)) {
     positionalAudio.setLoop(true);
   }
   
@@ -753,6 +1348,46 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
         
         // Apply the filter
         positionalAudio.setFilter(filter);
+      }
+      // NEW: Apply synthesizer specific processing
+      else if ((params.soundType === "synthesizer" || (params.soundType === "custom" && params.oscType !== undefined)) && positionalAudio.source) {
+        console.log("Applying synthesizer sound effects");
+        
+        // Create filter based on filter parameters if available
+        if (params.filterType && params.filterCutoff) {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = params.filterType || "lowpass";
+          filter.frequency.value = params.filterCutoff || 2000;
+          filter.Q.value = params.filterResonance || 1;
+          
+          // Apply the filter
+          positionalAudio.setFilter(filter);
+        }
+      }
+      // NEW: Apply noise specific processing
+      else if ((params.soundType === "noise" || (params.soundType === "custom" && params.noiseColor !== undefined)) && positionalAudio.source) {
+        console.log("Applying noise sound effects");
+        
+        // Create EQ for noise shaping
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "peaking";
+        filter.frequency.value = 1000;
+        filter.gain.value = params.spectralTilt || 0;
+        
+        // Apply the filter
+        positionalAudio.setFilter(filter);
+      }
+      // NEW: Apply formant specific processing
+      else if ((params.soundType === "formant" || (params.soundType === "custom" && params.formant1 !== undefined)) && positionalAudio.source) {
+        console.log("Applying formant sound effects");
+        
+        // For formants, add subtle reverb simulation
+        if (params.breathiness > 0.5) {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = "highpass";
+          filter.frequency.value = 500;
+          positionalAudio.setFilter(filter);
+        }
       }
     } catch (error) {
       console.warn("Could not apply audio effects:", error);
@@ -1019,6 +1654,157 @@ function randomizeParameters() {
     
     const surfaces = ["grass", "gravel", "wood", "tile"];
     document.getElementById("stepSurface").value = getRandomItem(surfaces);
+  }
+  
+  // NEW: Synthesizer randomization
+  if (soundType === "synthesizer" || soundType === "custom") {
+    // Base oscillator parameters
+    const oscTypes = ["sine", "square", "sawtooth", "triangle", "custom"];
+    document.getElementById("oscType").value = getRandomItem(oscTypes);
+    document.getElementById("oscFrequency").value = getRandomInRange(50, 1000, true);
+    updateParamOutput("oscFrequency");
+    document.getElementById("oscDetune").value = getRandomInRange(-50, 50, true);
+    updateParamOutput("oscDetune");
+    
+    // Harmonics and noise
+    document.getElementById("harmonic1").value = getRandomInRange(0, 0.8).toFixed(2);
+    updateParamOutput("harmonic1");
+    document.getElementById("harmonic2").value = getRandomInRange(0, 0.6).toFixed(2);
+    updateParamOutput("harmonic2");
+    document.getElementById("harmonic3").value = getRandomInRange(0, 0.4).toFixed(2);
+    updateParamOutput("harmonic3");
+    document.getElementById("noiseAmount").value = getRandomInRange(0, 0.5).toFixed(2);
+    updateParamOutput("noiseAmount");
+    
+    // LFO parameters
+    document.getElementById("lfoRate").value = getRandomInRange(0.1, 8).toFixed(1);
+    updateParamOutput("lfoRate");
+    document.getElementById("lfoDepth").value = getRandomInRange(0, 0.6).toFixed(2);
+    updateParamOutput("lfoDepth");
+    const lfoTargets = ["pitch", "amplitude", "filter"];
+    document.getElementById("lfoTarget").value = getRandomItem(lfoTargets);
+    
+    // Filter parameters
+    const filterTypes = ["lowpass", "highpass", "bandpass", "notch"];
+    document.getElementById("filterType").value = getRandomItem(filterTypes);
+    document.getElementById("filterCutoff").value = getRandomInRange(200, 5000, true);
+    updateParamOutput("filterCutoff");
+    document.getElementById("filterResonance").value = getRandomInRange(0.2, 8).toFixed(1);
+    updateParamOutput("filterResonance");
+    
+    // Envelope parameters
+    document.getElementById("envelopeAttack").value = getRandomInRange(0.001, 1).toFixed(3);
+    updateParamOutput("envelopeAttack");
+    document.getElementById("envelopeRelease").value = getRandomInRange(0.05, 3).toFixed(2);
+    updateParamOutput("envelopeRelease");
+  }
+  
+  // NEW: Percussion randomization
+  if (soundType === "percussion" || soundType === "custom") {
+    document.getElementById("impactSharpness").value = getRandomInRange(0.3, 1).toFixed(2);
+    updateParamOutput("impactSharpness");
+    document.getElementById("bodyResonance").value = getRandomInRange(0.2, 0.9).toFixed(2);
+    updateParamOutput("bodyResonance");
+    document.getElementById("decayLength").value = getRandomInRange(0.1, 0.8).toFixed(2);
+    updateParamOutput("decayLength");
+    document.getElementById("pitchBend").value = getRandomInRange(0, 0.6).toFixed(2);
+    updateParamOutput("pitchBend");
+    document.getElementById("materialHardness").value = getRandomInRange(0.2, 0.9).toFixed(2);
+    updateParamOutput("materialHardness");
+    document.getElementById("materialDensity").value = getRandomInRange(0.3, 0.8).toFixed(2);
+    updateParamOutput("materialDensity");
+    
+    // Additional percussion parameters
+    const percTypes = ["drum", "woodblock", "metal", "membrane", "glass"];
+    document.getElementById("percussionType").value = getRandomItem(percTypes);
+    document.getElementById("strikeVelocity").value = getRandomInRange(0.3, 1).toFixed(2);
+    updateParamOutput("strikeVelocity");
+    document.getElementById("strikePosition").value = getRandomInRange(0.1, 0.9).toFixed(2);
+    updateParamOutput("strikePosition");
+    document.getElementById("resonantModes").value = getRandomInRange(1, 5, true);
+    updateParamOutput("resonantModes");
+  }
+  
+  // NEW: Noise randomization
+  if (soundType === "noise" || soundType === "custom") {
+    const noiseColors = ["white", "pink", "brown", "blue", "violet", "grey"];
+    document.getElementById("noiseColor").value = getRandomItem(noiseColors);
+    document.getElementById("noiseDensity").value = getRandomInRange(0.3, 0.9).toFixed(2);
+    updateParamOutput("noiseDensity");
+    document.getElementById("lowFreqContent").value = getRandomInRange(0.2, 0.8).toFixed(2);
+    updateParamOutput("lowFreqContent");
+    document.getElementById("highFreqContent").value = getRandomInRange(0.2, 0.8).toFixed(2);
+    updateParamOutput("highFreqContent");
+    document.getElementById("spectralTilt").value = getRandomInRange(-10, 6, true);
+    updateParamOutput("spectralTilt");
+    
+    // Additional noise parameters
+    document.getElementById("noiseModulation").value = getRandomInRange(0, 0.5).toFixed(2);
+    updateParamOutput("noiseModulation");
+    document.getElementById("noiseModRate").value = getRandomInRange(0.2, 5).toFixed(1);
+    updateParamOutput("noiseModRate");
+    document.getElementById("bandpassCenter").value = getRandomInRange(300, 5000, true);
+    updateParamOutput("bandpassCenter");
+    document.getElementById("bandpassWidth").value = getRandomInRange(100, 2000, true);
+    updateParamOutput("bandpassWidth");
+    document.getElementById("noiseQuantization").value = getRandomInRange(1, 16, true);
+    updateParamOutput("noiseQuantization");
+  }
+  
+  // NEW: Mechanical randomization
+  if (soundType === "mechanical" || soundType === "custom") {
+    document.getElementById("rpm").value = getRandomInRange(100, 1000, true);
+    updateParamOutput("rpm");
+    document.getElementById("gearRatio").value = getRandomInRange(0.2, 1.5).toFixed(2);
+    updateParamOutput("gearRatio");
+    document.getElementById("friction").value = getRandomInRange(0.1, 0.7).toFixed(2);
+    updateParamOutput("friction");
+    document.getElementById("metallic").value = getRandomInRange(0.2, 0.9).toFixed(2);
+    updateParamOutput("metallic");
+    document.getElementById("mechanicalLooseness").value = getRandomInRange(0.1, 0.6).toFixed(2);
+    updateParamOutput("mechanicalLooseness");
+    
+    // Additional mechanical parameters
+    const mechTypes = ["motor", "engine", "gears", "belt", "hydraulic"];
+    document.getElementById("mechanicalType").value = getRandomItem(mechTypes);
+    document.getElementById("motorLoadFactor").value = getRandomInRange(0.1, 0.8).toFixed(2);
+    updateParamOutput("motorLoadFactor");
+    document.getElementById("rpmFluctuation").value = getRandomInRange(0.05, 0.5).toFixed(2);
+    updateParamOutput("rpmFluctuation");
+    document.getElementById("mechanicalResonance").value = getRandomInRange(100, 1500, true);
+    updateParamOutput("mechanicalResonance");
+    document.getElementById("surfaceContact").value = getRandomInRange(0.2, 0.7).toFixed(2);
+    updateParamOutput("surfaceContact");
+  }
+  
+  // NEW: Formant randomization
+  if (soundType === "formant" || soundType === "custom") {
+    document.getElementById("formant1").value = getRandomInRange(250, 700, true);
+    updateParamOutput("formant1");
+    document.getElementById("formant2").value = getRandomInRange(900, 2200, true);
+    updateParamOutput("formant2");
+    document.getElementById("formant3").value = getRandomInRange(1800, 3500, true);
+    updateParamOutput("formant3");
+    document.getElementById("breathiness").value = getRandomInRange(0.1, 0.7).toFixed(2);
+    updateParamOutput("breathiness");
+    document.getElementById("vocalTension").value = getRandomInRange(0.2, 0.8).toFixed(2);
+    updateParamOutput("vocalTension");
+    document.getElementById("vibrato").value = getRandomInRange(0, 0.5).toFixed(2);
+    updateParamOutput("vibrato");
+    document.getElementById("vibratoRate").value = getRandomInRange(2, 8).toFixed(1);
+    updateParamOutput("vibratoRate");
+    
+    // Additional formant parameters
+    const vowels = ["a", "e", "i", "o", "u"];
+    document.getElementById("vocalPreset").value = getRandomItem(vowels);
+    document.getElementById("glottalOpenQuotient").value = getRandomInRange(0.3, 0.8).toFixed(2);
+    updateParamOutput("glottalOpenQuotient");
+    document.getElementById("throatLength").value = getRandomInRange(0.7, 1.3).toFixed(2);
+    updateParamOutput("throatLength");
+    document.getElementById("tonguePosition").value = getRandomInRange(0.2, 0.8).toFixed(2);
+    updateParamOutput("tonguePosition");
+    document.getElementById("mouthOpening").value = getRandomInRange(0.3, 0.9).toFixed(2);
+    updateParamOutput("mouthOpening");
   }
   
   // Always randomize spatial parameters
