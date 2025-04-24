@@ -7,191 +7,197 @@
   </head>
   <body>
     <div id="controlPanel">
-      <h2>Procedural Sound Creator</h2>
-      
-      <!-- Sound Key Input -->
-      <div class="key-input">
-        <label for="soundKeyInput">Sound Key:</label>
-        <div class="input-group">
-          <input type="text" id="soundKeyInput" placeholder="Enter sound key...">
-          <button type="button" id="loadKeyButton" onclick="loadSoundKey()">Load</button>
+      <!-- Main scrollable content area -->
+      <div class="panel-content">
+        <h2>Procedural Sound Creator</h2>
+        
+        <!-- Sound Key Input -->
+        <div class="key-input">
+          <label for="soundKeyInput">Sound Key:</label>
+          <div class="input-group">
+            <input type="text" id="soundKeyInput" placeholder="Enter sound key...">
+            <button type="button" id="loadKeyButton" onclick="loadSoundKey()">Load</button>
+          </div>
         </div>
+        
+        <!-- Sound Type Selector -->
+        <form id="soundForm">
+          <fieldset>
+            <legend>Sound Type</legend>
+            <label for="soundType">Select Sound Type:</label>
+            <select id="soundType" name="soundType">
+              <option value="wind">Wind Blowing</option>
+              <option value="ocean">Ocean Waves</option>
+              <option value="leaves">Tree Leaves Rustling</option>
+              <option value="fire">Ambient Fire Burning</option>
+              <option value="footsteps">Footsteps on Surface</option>
+              <option value="custom">Custom Parameters</option>
+            </select>
+          </fieldset>
+
+          <!-- Sound Parameters Container -->
+          <div id="parametersContainer">
+            <!-- WIND Specific Parameters -->
+            <fieldset id="windParams" class="sound-params">
+              <legend>Wind Parameters</legend>
+              <label for="windSpeed">Wind Speed (0–100):</label>
+              <input type="number" id="windSpeed" name="windSpeed" min="0" max="100" value="40">
+              <label for="windGustiness">Gustiness (0.0–1.0):</label>
+              <input type="number" id="windGustiness" name="windGustiness" step="0.1" min="0" max="1" value="0.5">
+              <label for="windDirection">Wind Direction:</label>
+              <select id="windDirection" name="windDirection">
+                <option value="N">North</option>
+                <option value="NE">North-East</option>
+                <option value="E">East</option>
+                <option value="SE">South-East</option>
+                <option value="S">South</option>
+                <option value="SW">South-West</option>
+                <option value="W">West</option>
+                <option value="NW">North-West</option>
+              </select>
+              <label for="turbulence">Turbulence (0.0–1.0):</label>
+              <input type="number" id="turbulence" name="turbulence" step="0.1" min="0" max="1" value="0.3">
+              <label for="groundMaterial">Ground Material:</label>
+              <select id="groundMaterial" name="groundMaterial">
+                <option value="grass">Grass</option>
+                <option value="snow">Snow</option>
+                <option value="rock">Rock</option>
+                <option value="sand">Sand</option>
+              </select>
+            </fieldset>
+
+            <!-- OCEAN Specific Parameters -->
+            <fieldset id="oceanParams" class="sound-params" style="display:none;">
+              <legend>Ocean Waves</legend>
+              <label for="waveHeight">Wave Height (0–100):</label>
+              <input type="range" id="waveHeight" name="waveHeight" min="0" max="100" value="60" class="slider" oninput="updateParamOutput('waveHeight')">
+              <span class="param-value" id="waveHeightOutput">60</span>
+              
+              <label for="waveFrequency">Wave Frequency (0.1–2.0):</label>
+              <input type="range" id="waveFrequency" name="waveFrequency" step="0.1" min="0.1" max="2" value="0.5" class="slider" oninput="updateParamOutput('waveFrequency')">
+              <span class="param-value" id="waveFrequencyOutput">0.5</span>
+              
+              <label for="surfIntensity">Surf Intensity (0.0–1.0):</label>
+              <input type="range" id="surfIntensity" name="surfIntensity" step="0.1" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('surfIntensity')">
+              <span class="param-value" id="surfIntensityOutput">0.7</span>
+              
+              <label for="oceanDepth">Ocean Depth:</label>
+              <select id="oceanDepth" name="oceanDepth">
+                <option value="shallow">Shallow</option>
+                <option value="medium" selected>Medium</option>
+                <option value="deep">Deep</option>
+              </select>
+            </fieldset>
+
+            <!-- LEAVES Specific Parameters -->
+            <fieldset id="leavesParams" class="sound-params" style="display:none;">
+              <legend>Leaves Rustling</legend>
+              <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
+              <input type="number" id="rustleIntensity" name="rustleIntensity" step="0.1" min="0" max="1" value="0.5">
+              <label for="leafType">Leaf Type:</label>
+              <select id="leafType" name="leafType">
+                <option value="generic">Generic</option>
+                <option value="oak">Oak</option>
+                <option value="pine">Pine</option>
+                <option value="maple">Maple</option>
+                <option value="birch">Birch</option>
+              </select>
+              <label for="leafDensity">Leaf Density (0–100):</label>
+              <input type="number" id="leafDensity" name="leafDensity" min="0" max="100" step="5" value="50">
+            </fieldset>
+
+            <!-- FIRE Specific Parameters -->
+            <fieldset id="fireParams" class="sound-params" style="display:none;">
+              <legend>Ambient Fire</legend>
+              <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
+              <input type="range" id="fireIntensity" name="fireIntensity" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('fireIntensity')">
+              <span class="param-value" id="fireIntensityOutput">0.5</span>
+              
+              <label for="crackleFrequency">Crackle Frequency (0–10):</label>
+              <input type="range" id="crackleFrequency" name="crackleFrequency" step="0.5" min="0" max="10" value="5" class="slider" oninput="updateParamOutput('crackleFrequency')">
+              <span class="param-value" id="crackleFrequencyOutput">5</span>
+              
+              <label for="crackleIntensity">Crackle Intensity (0.0–1.0):</label>
+              <input type="range" id="crackleIntensity" name="crackleIntensity" step="0.1" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('crackleIntensity')">
+              <span class="param-value" id="crackleIntensityOutput">0.6</span>
+              
+              <label for="flickerSpeed">Flicker Speed (0.0–5.0):</label>
+              <input type="range" id="flickerSpeed" name="flickerSpeed" step="0.1" min="0" max="5" value="1.0" class="slider" oninput="updateParamOutput('flickerSpeed')">
+              <span class="param-value" id="flickerSpeedOutput">1.0</span>
+              
+              <label for="fuelType">Fuel Type:</label>
+              <select id="fuelType" name="fuelType">
+                <option value="wood">Wood</option>
+                <option value="gas">Gas</option>
+                <option value="charcoal">Charcoal</option>
+              </select>
+              
+              <label for="flameTemp">Flame Temperature:</label>
+              <select id="flameTemp" name="flameTemp">
+                <option value="cool">Cool</option>
+                <option value="neutral">Neutral</option>
+                <option value="warm">Warm</option>
+              </select>
+            </fieldset>
+
+            <!-- FOOTSTEPS Specific Parameters -->
+            <fieldset id="footstepsParams" class="sound-params" style="display:none;">
+              <legend>Footsteps</legend>
+              <label for="footstepVolume">Footstep Volume (0.0–1.0):</label>
+              <input type="number" id="footstepVolume" name="footstepVolume" step="0.1" min="0" max="1" value="0.6">
+              <label for="stepFrequency">Step Frequency (steps/minute):</label>
+              <input type="number" id="stepFrequency" name="stepFrequency" min="30" max="200" value="100">
+              <label for="footwearType">Footwear Type:</label>
+              <select id="footwearType" name="footwearType">
+                <option value="sneakers">Sneakers</option>
+                <option value="boots">Boots</option>
+                <option value="sandals">Sandals</option>
+                <option value="barefoot">Barefoot</option>
+              </select>
+              <label for="stepSurface">Surface Type:</label>
+              <select id="stepSurface" name="stepSurface">
+                <option value="grass">Grass</option>
+                <option value="gravel">Gravel</option>
+                <option value="wood">Wood</option>
+                <option value="tile">Tile</option>
+              </select>
+            </fieldset>
+
+            <!-- Global Spatial Parameters (applies to all sound types) -->
+            <fieldset id="spatialParams">
+              <legend>Spatial Parameters</legend>
+              <label for="refDistance">Reference Distance (2–50):</label>
+              <input type="number" id="refDistance" name="refDistance" min="2" max="50" value="5">
+              <label for="rolloff">Rolloff Factor (0.1–5):</label>
+              <input type="number" id="rolloff" name="rolloff" step="0.1" min="0.1" max="5" value="1">
+              <label for="coneInner">Cone Inner Angle (0–180):</label>
+              <input type="number" id="coneInner" name="coneInner" min="0" max="180" value="60">
+              <label for="coneOuter">Cone Outer Angle (0–360):</label>
+              <input type="number" id="coneOuter" name="coneOuter" min="0" max="360" value="180">
+              <label for="coneOuterGain">Cone Outer Gain (0–1):</label>
+              <input type="number" id="coneOuterGain" name="coneOuterGain" step="0.1" min="0" max="1" value="0.1">
+            </fieldset>
+          </div>
+        </form>
       </div>
       
-      <!-- Sound Type Selector -->
-      <form id="soundForm">
-        <fieldset>
-          <legend>Sound Type</legend>
-          <label for="soundType">Select Sound Type:</label>
-          <select id="soundType" name="soundType">
-            <option value="wind">Wind Blowing</option>
-            <option value="ocean">Ocean Waves</option>
-            <option value="leaves">Tree Leaves Rustling</option>
-            <option value="fire">Ambient Fire Burning</option>
-            <option value="footsteps">Footsteps on Surface</option>
-            <option value="custom">Custom Parameters</option>
-          </select>
-        </fieldset>
-
-        <!-- Sound Parameters Container -->
-        <div id="parametersContainer">
-          <!-- WIND Specific Parameters -->
-          <fieldset id="windParams" class="sound-params">
-            <legend>Wind Parameters</legend>
-            <label for="windSpeed">Wind Speed (0–100):</label>
-            <input type="number" id="windSpeed" name="windSpeed" min="0" max="100" value="40">
-            <label for="windGustiness">Gustiness (0.0–1.0):</label>
-            <input type="number" id="windGustiness" name="windGustiness" step="0.1" min="0" max="1" value="0.5">
-            <label for="windDirection">Wind Direction:</label>
-            <select id="windDirection" name="windDirection">
-              <option value="N">North</option>
-              <option value="NE">North-East</option>
-              <option value="E">East</option>
-              <option value="SE">South-East</option>
-              <option value="S">South</option>
-              <option value="SW">South-West</option>
-              <option value="W">West</option>
-              <option value="NW">North-West</option>
-            </select>
-            <label for="turbulence">Turbulence (0.0–1.0):</label>
-            <input type="number" id="turbulence" name="turbulence" step="0.1" min="0" max="1" value="0.3">
-            <label for="groundMaterial">Ground Material:</label>
-            <select id="groundMaterial" name="groundMaterial">
-              <option value="grass">Grass</option>
-              <option value="snow">Snow</option>
-              <option value="rock">Rock</option>
-              <option value="sand">Sand</option>
-            </select>
-          </fieldset>
-
-          <!-- OCEAN Specific Parameters -->
-          <fieldset id="oceanParams" class="sound-params" style="display:none;">
-            <legend>Ocean Waves</legend>
-            <label for="waveHeight">Wave Height (0–100):</label>
-            <input type="range" id="waveHeight" name="waveHeight" min="0" max="100" value="60" class="slider" oninput="updateParamOutput('waveHeight')">
-            <span class="param-value" id="waveHeightOutput">60</span>
-            
-            <label for="waveFrequency">Wave Frequency (0.1–2.0):</label>
-            <input type="range" id="waveFrequency" name="waveFrequency" step="0.1" min="0.1" max="2" value="0.5" class="slider" oninput="updateParamOutput('waveFrequency')">
-            <span class="param-value" id="waveFrequencyOutput">0.5</span>
-            
-            <label for="surfIntensity">Surf Intensity (0.0–1.0):</label>
-            <input type="range" id="surfIntensity" name="surfIntensity" step="0.1" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('surfIntensity')">
-            <span class="param-value" id="surfIntensityOutput">0.7</span>
-            
-            <label for="oceanDepth">Ocean Depth:</label>
-            <select id="oceanDepth" name="oceanDepth">
-              <option value="shallow">Shallow</option>
-              <option value="medium" selected>Medium</option>
-              <option value="deep">Deep</option>
-            </select>
-          </fieldset>
-
-          <!-- LEAVES Specific Parameters -->
-          <fieldset id="leavesParams" class="sound-params" style="display:none;">
-            <legend>Leaves Rustling</legend>
-            <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
-            <input type="number" id="rustleIntensity" name="rustleIntensity" step="0.1" min="0" max="1" value="0.5">
-            <label for="leafType">Leaf Type:</label>
-            <select id="leafType" name="leafType">
-              <option value="generic">Generic</option>
-              <option value="oak">Oak</option>
-              <option value="pine">Pine</option>
-              <option value="maple">Maple</option>
-              <option value="birch">Birch</option>
-            </select>
-            <label for="leafDensity">Leaf Density (0–100):</label>
-            <input type="number" id="leafDensity" name="leafDensity" min="0" max="100" step="5" value="50">
-          </fieldset>
-
-          <!-- FIRE Specific Parameters -->
-          <fieldset id="fireParams" class="sound-params" style="display:none;">
-            <legend>Ambient Fire</legend>
-            <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
-            <input type="range" id="fireIntensity" name="fireIntensity" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('fireIntensity')">
-            <span class="param-value" id="fireIntensityOutput">0.5</span>
-            
-            <label for="crackleFrequency">Crackle Frequency (0–10):</label>
-            <input type="range" id="crackleFrequency" name="crackleFrequency" step="0.5" min="0" max="10" value="5" class="slider" oninput="updateParamOutput('crackleFrequency')">
-            <span class="param-value" id="crackleFrequencyOutput">5</span>
-            
-            <label for="crackleIntensity">Crackle Intensity (0.0–1.0):</label>
-            <input type="range" id="crackleIntensity" name="crackleIntensity" step="0.1" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('crackleIntensity')">
-            <span class="param-value" id="crackleIntensityOutput">0.6</span>
-            
-            <label for="flickerSpeed">Flicker Speed (0.0–5.0):</label>
-            <input type="range" id="flickerSpeed" name="flickerSpeed" step="0.1" min="0" max="5" value="1.0" class="slider" oninput="updateParamOutput('flickerSpeed')">
-            <span class="param-value" id="flickerSpeedOutput">1.0</span>
-            
-            <label for="fuelType">Fuel Type:</label>
-            <select id="fuelType" name="fuelType">
-              <option value="wood">Wood</option>
-              <option value="gas">Gas</option>
-              <option value="charcoal">Charcoal</option>
-            </select>
-            
-            <label for="flameTemp">Flame Temperature:</label>
-            <select id="flameTemp" name="flameTemp">
-              <option value="cool">Cool</option>
-              <option value="neutral">Neutral</option>
-              <option value="warm">Warm</option>
-            </select>
-          </fieldset>
-
-          <!-- FOOTSTEPS Specific Parameters -->
-          <fieldset id="footstepsParams" class="sound-params" style="display:none;">
-            <legend>Footsteps</legend>
-            <label for="footstepVolume">Footstep Volume (0.0–1.0):</label>
-            <input type="number" id="footstepVolume" name="footstepVolume" step="0.1" min="0" max="1" value="0.6">
-            <label for="stepFrequency">Step Frequency (steps/minute):</label>
-            <input type="number" id="stepFrequency" name="stepFrequency" min="30" max="200" value="100">
-            <label for="footwearType">Footwear Type:</label>
-            <select id="footwearType" name="footwearType">
-              <option value="sneakers">Sneakers</option>
-              <option value="boots">Boots</option>
-              <option value="sandals">Sandals</option>
-              <option value="barefoot">Barefoot</option>
-            </select>
-            <label for="stepSurface">Surface Type:</label>
-            <select id="stepSurface" name="stepSurface">
-              <option value="grass">Grass</option>
-              <option value="gravel">Gravel</option>
-              <option value="wood">Wood</option>
-              <option value="tile">Tile</option>
-            </select>
-          </fieldset>
-
-          <!-- Global Spatial Parameters (applies to all sound types) -->
-          <fieldset id="spatialParams">
-            <legend>Spatial Parameters</legend>
-            <label for="refDistance">Reference Distance (2–50):</label>
-            <input type="number" id="refDistance" name="refDistance" min="2" max="50" value="5">
-            <label for="rolloff">Rolloff Factor (0.1–5):</label>
-            <input type="number" id="rolloff" name="rolloff" step="0.1" min="0.1" max="5" value="1">
-            <label for="coneInner">Cone Inner Angle (0–180):</label>
-            <input type="number" id="coneInner" name="coneInner" min="0" max="180" value="60">
-            <label for="coneOuter">Cone Outer Angle (0–360):</label>
-            <input type="number" id="coneOuter" name="coneOuter" min="0" max="360" value="180">
-            <label for="coneOuterGain">Cone Outer Gain (0–1):</label>
-            <input type="number" id="coneOuterGain" name="coneOuterGain" step="0.1" min="0" max="1" value="0.1">
-          </fieldset>
-        </div>
-
+      <!-- Fixed bottom section -->
+      <div class="panel-footer">
         <div class="action-buttons">
           <button type="button" class="primary-btn" onclick="generateSoundKey()">Generate Sound Key</button>
           <button type="button" class="play-btn" onclick="playSoundFromUI()">Play Sound</button>
         </div>
-      </form>
 
-      <div id="output-container">
-        <h3>Sound Key:</h3>
-        <p id="soundKeyDisplay" class="key-display"></p>
-        <p id="playStatus"></p>
-      </div>
-      
-      <div id="durationControl">
-        <label for="playbackDuration">Playback Duration: <span id="durationValue">5</span> seconds</label>
-        <input type="range" id="playbackDuration" min="1" max="60" value="5" class="slider" oninput="updateDurationDisplay(this.value)">
+        <div id="output-container">
+          <h3>Sound Key:</h3>
+          <p id="soundKeyDisplay" class="key-display"></p>
+          <p id="playStatus"></p>
+        </div>
+        
+        <div id="durationControl">
+          <label for="playbackDuration">Playback Duration: <span id="durationValue">5</span> seconds</label>
+          <input type="range" id="playbackDuration" min="1" max="60" value="5" class="slider" oninput="updateDurationDisplay(this.value)">
+        </div>
       </div>
     </div>
 
