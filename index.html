@@ -134,6 +134,11 @@
       <h2>Sound Key:</h2>
       <p id="soundKeyDisplay" style="font-weight: bold; word-break: break-all;"></p>
       <button type="button" onclick="playSoundFromUI()">Play Sound</button>
+      
+      <div id="durationControl">
+        <label for="playbackDuration">Playback Duration: <span id="durationValue">5</span> seconds</label>
+        <input type="range" id="playbackDuration" min="1" max="60" value="5" oninput="updateDurationDisplay(this.value)">
+      </div>
     </div>
 
     <!-- Three.js from a CDN -->

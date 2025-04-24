@@ -298,17 +298,25 @@ animate();
 ///////////////////////////
 // Play Sound via UI Button
 ///////////////////////////
+function updateDurationDisplay(value) {
+  document.getElementById('durationValue').textContent = value;
+}
+
 function playSoundFromUI() {
   const key = document.getElementById("soundKeyDisplay").textContent;
   if (!key) {
     alert("Please generate a sound key first.");
     return;
   }
+  
+  // Get duration from slider
+  const duration = parseInt(document.getElementById("playbackDuration").value);
+  
   const orientation = new THREE.Vector3(0, 0, -1);
   const position = new THREE.Vector3(0, 5, 0);
   const options = {
     velocity: new THREE.Vector3(0.5, 0, 0),
-    duration: 5,
+    duration: duration,
     fadeIn: 0.2,
     fadeOut: 0.3
   };
