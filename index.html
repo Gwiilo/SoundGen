@@ -4,6 +4,14 @@
     <meta charset="utf-8">
     <title>Procedural Sound Creation</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Fix for dropdown menus -->
+    <style>
+      select {
+        appearance: auto !important; /* Force browsers to use native dropdown */
+        -webkit-appearance: menulist !important; /* For Safari/Chrome */
+        -moz-appearance: menulist !important; /* For Firefox */
+      }
+    </style>
   </head>
   <body>
     <div id="controlPanel">
@@ -95,7 +103,97 @@
               </div>
             </fieldset>
 
-            <!-- OCEAN Specific Parameters - now with collapsed class -->
+            <!-- LEAVES Specific Parameters - Enhanced with new realistic parameters -->
+            <fieldset id="leavesParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Leaves Rustling <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
+                <input type="range" id="rustleIntensity" name="rustleIntensity" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('rustleIntensity')">
+                <span class="param-value" id="rustleIntensityOutput">0.5</span>
+                
+                <label for="leafType">Leaf Type:</label>
+                <select id="leafType" name="leafType">
+                  <option value="generic">Generic</option>
+                  <option value="oak">Oak</option>
+                  <option value="pine">Pine</option>
+                  <option value="maple">Maple</option>
+                  <option value="birch">Birch</option>
+                </select>
+                
+                <label for="leafDensity">Leaf Density (0–100):</label>
+                <input type="range" id="leafDensity" name="leafDensity" min="0" max="100" step="5" value="50" class="slider" oninput="updateParamOutput('leafDensity')">
+                <span class="param-value" id="leafDensityOutput">50</span>
+                
+                <!-- New parameters for more realistic leaf sounds -->
+                <label for="leafMoisture">Leaf Moisture (0.0-1.0):</label>
+                <input type="range" id="leafMoisture" name="leafMoisture" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('leafMoisture')">
+                <span class="param-value" id="leafMoistureOutput">0.2</span>
+                
+                <label for="leafSeasonFactor">Seasonal Factor (0.0-1.0):</label>
+                <input type="range" id="leafSeasonFactor" name="leafSeasonFactor" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('leafSeasonFactor')">
+                <span class="param-value" id="leafSeasonFactorOutput">0.5</span>
+                <span class="param-description">(0 = Spring/Soft, 1 = Fall/Crisp)</span>
+                
+                <label for="leafSize">Leaf Size (0.0-1.0):</label>
+                <input type="range" id="leafSize" name="leafSize" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('leafSize')">
+                <span class="param-value" id="leafSizeOutput">0.5</span>
+              </div>
+            </fieldset>
+
+            <!-- FIRE Specific Parameters - Enhanced with new realistic parameters -->
+            <fieldset id="fireParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Ambient Fire <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
+                <input type="range" id="fireIntensity" name="fireIntensity" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('fireIntensity')">
+                <span class="param-value" id="fireIntensityOutput">0.5</span>
+                
+                <label for="crackleFrequency">Crackle Frequency (0–10):</label>
+                <input type="range" id="crackleFrequency" name="crackleFrequency" step="0.5" min="0" max="10" value="5" class="slider" oninput="updateParamOutput('crackleFrequency')">
+                <span class="param-value" id="crackleFrequencyOutput">5</span>
+                
+                <label for="crackleIntensity">Crackle Intensity (0.0–1.0):</label>
+                <input type="range" id="crackleIntensity" name="crackleIntensity" step="0.1" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('crackleIntensity')">
+                <span class="param-value" id="crackleIntensityOutput">0.6</span>
+                
+                <label for="flickerSpeed">Flicker Speed (0.0–5.0):</label>
+                <input type="range" id="flickerSpeed" name="flickerSpeed" step="0.1" min="0.1" max="5" value="1.0" class="slider" oninput="updateParamOutput('flickerSpeed')">
+                <span class="param-value" id="flickerSpeedOutput">1.0</span>
+                
+                <label for="fuelType">Fuel Type:</label>
+                <select id="fuelType" name="fuelType">
+                  <option value="wood">Wood</option>
+                  <option value="gas">Gas</option>
+                  <option value="charcoal">Charcoal</option>
+                </select>
+                
+                <label for="flameTemp">Flame Temperature:</label>
+                <select id="flameTemp" name="flameTemp">
+                  <option value="cool">Cool</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="warm">Warm</option>
+                </select>
+                
+                <!-- New parameters for more realistic fire sounds -->
+                <label for="emberIntensity">Ember/Spark Intensity (0.0-1.0):</label>
+                <input type="range" id="emberIntensity" name="emberIntensity" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('emberIntensity')">
+                <span class="param-value" id="emberIntensityOutput">0.3</span>
+                
+                <label for="fireWindEffect">Wind Effect (0.0-1.0):</label>
+                <input type="range" id="fireWindEffect" name="fireWindEffect" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('fireWindEffect')">
+                <span class="param-value" id="fireWindEffectOutput">0.2</span>
+                
+                <label for="fireLocation">Fire Location:</label>
+                <select id="fireLocation" name="fireLocation">
+                  <option value="campfire">Campfire</option>
+                  <option value="fireplace">Fireplace</option>
+                  <option value="bonfire">Bonfire</option>
+                  <option value="cooking">Cooking Fire</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <!-- OCEAN Parameters - Enhanced with new realistic parameters -->
             <fieldset id="oceanParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Ocean Waves <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
@@ -117,85 +215,74 @@
                   <option value="medium" selected>Medium</option>
                   <option value="deep">Deep</option>
                 </select>
+                
+                <!-- New parameters for more realistic ocean sounds -->
+                <label for="shoreType">Shore Type:</label>
+                <select id="shoreType" name="shoreType">
+                  <option value="sandy">Sandy Beach</option>
+                  <option value="pebbly">Pebbly Beach</option>
+                  <option value="rocky">Rocky Shore</option>
+                </select>
+                
+                <label for="oceanDistance">Distance from Shore (0.0-1.0):</label>
+                <input type="range" id="oceanDistance" name="oceanDistance" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('oceanDistance')">
+                <span class="param-value" id="oceanDistanceOutput">0.5</span>
+                <span class="param-description">(0 = At Shore, 1 = Distant)</span>
+                
+                <label for="oceanStormy">Storm Intensity (0.0-1.0):</label>
+                <input type="range" id="oceanStormy" name="oceanStormy" step="0.01" min="0" max="1" value="0.0" class="slider" oninput="updateParamOutput('oceanStormy')">
+                <span class="param-value" id="oceanStormyOutput">0.0</span>
               </div>
             </fieldset>
 
-            <!-- LEAVES Specific Parameters - now with collapsed class -->
-            <fieldset id="leavesParams" class="sound-params collapsible-section collapsed" style="display:none;">
-              <legend class="collapse-toggle">Leaves Rustling <span class="collapse-icon">▼</span></legend>
-              <div class="collapsible-content">
-                <label for="rustleIntensity">Rustle Intensity (0.0–1.0):</label>
-                <input type="number" id="rustleIntensity" name="rustleIntensity" step="0.1" min="0" max="1" value="0.5">
-                <label for="leafType">Leaf Type:</label>
-                <select id="leafType" name="leafType">
-                  <option value="generic">Generic</option>
-                  <option value="oak">Oak</option>
-                  <option value="pine">Pine</option>
-                  <option value="maple">Maple</option>
-                  <option value="birch">Birch</option>
-                </select>
-                <label for="leafDensity">Leaf Density (0–100):</label>
-                <input type="number" id="leafDensity" name="leafDensity" min="0" max="100" step="5" value="50">
-              </div>
-            </fieldset>
-
-            <!-- FIRE Specific Parameters - now with collapsed class -->
-            <fieldset id="fireParams" class="sound-params collapsible-section collapsed" style="display:none;">
-              <legend class="collapse-toggle">Ambient Fire <span class="collapse-icon">▼</span></legend>
-              <div class="collapsible-content">
-                <label for="fireIntensity">Fire Intensity (0.0–1.0):</label>
-                <input type="range" id="fireIntensity" name="fireIntensity" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('fireIntensity')">
-                <span class="param-value" id="fireIntensityOutput">0.5</span>
-                
-                <label for="crackleFrequency">Crackle Frequency (0–10):</label>
-                <input type="range" id="crackleFrequency" name="crackleFrequency" step="0.5" min="0" max="10" value="5" class="slider" oninput="updateParamOutput('crackleFrequency')">
-                <span class="param-value" id="crackleFrequencyOutput">5</span>
-                
-                <label for="crackleIntensity">Crackle Intensity (0.0–1.0):</label>
-                <input type="range" id="crackleIntensity" name="crackleIntensity" step="0.1" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('crackleIntensity')">
-                <span class="param-value" id="crackleIntensityOutput">0.6</span>
-                
-                <label for="flickerSpeed">Flicker Speed (0.0–5.0):</label>
-                <input type="range" id="flickerSpeed" name="flickerSpeed" step="0.1" min="0" max="5" value="1.0" class="slider" oninput="updateParamOutput('flickerSpeed')">
-                <span class="param-value" id="flickerSpeedOutput">1.0</span>
-                
-                <label for="fuelType">Fuel Type:</label>
-                <select id="fuelType" name="fuelType">
-                  <option value="wood">Wood</option>
-                  <option value="gas">Gas</option>
-                  <option value="charcoal">Charcoal</option>
-                </select>
-                
-                <label for="flameTemp">Flame Temperature:</label>
-                <select id="flameTemp" name="flameTemp">
-                  <option value="cool">Cool</option>
-                  <option value="neutral">Neutral</option>
-                  <option value="warm">Warm</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <!-- FOOTSTEPS Specific Parameters - now with collapsed class -->
+            <!-- FOOTSTEPS Parameters - Enhanced with new realistic parameters -->
             <fieldset id="footstepsParams" class="sound-params collapsible-section collapsed" style="display:none;">
               <legend class="collapse-toggle">Footsteps <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="footstepVolume">Footstep Volume (0.0–1.0):</label>
-                <input type="number" id="footstepVolume" name="footstepVolume" step="0.1" min="0" max="1" value="0.6">
+                <input type="range" id="footstepVolume" name="footstepVolume" step="0.1" min="0" max="1" value="0.6" class="slider" oninput="updateParamOutput('footstepVolume')">
+                <span class="param-value" id="footstepVolumeOutput">0.6</span>
+                
                 <label for="stepFrequency">Step Frequency (steps/minute):</label>
-                <input type="number" id="stepFrequency" name="stepFrequency" min="30" max="200" value="100">
+                <input type="range" id="stepFrequency" name="stepFrequency" min="30" max="200" value="100" class="slider" oninput="updateParamOutput('stepFrequency')">
+                <span class="param-value" id="stepFrequencyOutput">100</span>
+                
                 <label for="footwearType">Footwear Type:</label>
                 <select id="footwearType" name="footwearType">
                   <option value="sneakers">Sneakers</option>
                   <option value="boots">Boots</option>
                   <option value="sandals">Sandals</option>
                   <option value="barefoot">Barefoot</option>
+                  <option value="heels">High Heels</option>
                 </select>
+                
                 <label for="stepSurface">Surface Type:</label>
                 <select id="stepSurface" name="stepSurface">
                   <option value="grass">Grass</option>
                   <option value="gravel">Gravel</option>
                   <option value="wood">Wood</option>
                   <option value="tile">Tile</option>
+                  <option value="concrete">Concrete</option>
+                  <option value="metal">Metal</option>
+                  <option value="carpet">Carpet</option>
+                  <option value="snow">Snow</option>
+                </select>
+                
+                <!-- New parameters for more realistic footstep sounds -->
+                <label for="stepWeight">Weight/Force (0.0-1.0):</label>
+                <input type="range" id="stepWeight" name="stepWeight" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('stepWeight')">
+                <span class="param-value" id="stepWeightOutput">0.5</span>
+                
+                <label for="surfaceWetness">Surface Wetness (0.0-1.0):</label>
+                <input type="range" id="surfaceWetness" name="surfaceWetness" step="0.01" min="0" max="1" value="0.0" class="slider" oninput="updateParamOutput('surfaceWetness')">
+                <span class="param-value" id="surfaceWetnessOutput">0.0</span>
+                
+                <label for="stepPattern">Step Pattern:</label>
+                <select id="stepPattern" name="stepPattern">
+                  <option value="walk">Walking</option>
+                  <option value="run">Running</option>
+                  <option value="sneak">Sneaking</option>
+                  <option value="march">Marching</option>
                 </select>
               </div>
             </fieldset>
@@ -416,6 +503,7 @@
                   <option value="gears">Gear System</option>
                   <option value="belt">Belt Drive</option>
                   <option value="hydraulic">Hydraulic</option>
+                  <option value="hvac">HVAC System</option>
                 </select>
                 
                 <label for="motorLoadFactor">Load Factor (0.0-1.0):</label>
@@ -496,6 +584,117 @@
               </div>
             </fieldset>
 
+            <!-- NEW: Environmental Sound Parameters -->
+            <fieldset id="environmentalParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Environmental Sound <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <label for="environment">Environment Type:</label>
+                <select id="environment" name="environment">
+                  <option value="outdoor">Outdoor</option>
+                  <option value="indoor">Indoor</option>
+                </select>
+                
+                <label for="weather">Weather Condition:</label>
+                <select id="weather" name="weather">
+                  <option value="clear">Clear</option>
+                  <option value="rainy">Rainy</option>
+                  <option value="windy">Windy</option>
+                  <option value="snowy">Snowy</option>
+                </select>
+                
+                <label for="timeOfDay">Time of Day:</label>
+                <select id="timeOfDay" name="timeOfDay">
+                  <option value="day">Day</option>
+                  <option value="night">Night</option>
+                  <option value="dusk">Dusk/Dawn</option>
+                </select>
+                
+                <label for="roomSize">Room Size (for indoor):</label>
+                <select id="roomSize" name="roomSize">
+                  <option value="small">Small Room</option>
+                  <option value="medium">Medium Room</option>
+                  <option value="large">Large Hall</option>
+                </select>
+                
+                <label for="populationDensity">Population Density (0.0-1.0):</label>
+                <input type="range" id="populationDensity" name="populationDensity" step="0.01" min="0" max="1" value="0.2" class="slider" oninput="updateParamOutput('populationDensity')">
+                <span class="param-value" id="populationDensityOutput">0.2</span>
+                
+                <label for="ambientLevel">Ambient Sound Level (0.0-1.0):</label>
+                <input type="range" id="ambientLevel" name="ambientLevel" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('ambientLevel')">
+                <span class="param-value" id="ambientLevelOutput">0.5</span>
+              </div>
+            </fieldset>
+
+            <!-- NEW: Layered Sound Configuration -->
+            <fieldset id="layeredParams" class="sound-params collapsible-section collapsed" style="display:none;">
+              <legend class="collapse-toggle">Layered Sound <span class="collapse-icon">▼</span></legend>
+              <div class="collapsible-content">
+                <div class="layer-controls">
+                  <div class="layer" id="layer1">
+                    <h4>Layer 1</h4>
+                    <label for="layer1Type">Sound Type:</label>
+                    <select id="layer1Type" name="layer1Type">
+                      <option value="wind">Wind</option>
+                      <option value="ocean">Ocean</option>
+                      <option value="leaves">Leaves</option>
+                      <option value="fire">Fire</option>
+                      <option value="noise">Noise</option>
+                      <option value="synthesizer">Synthesizer</option>
+                    </select>
+                    
+                    <label for="layer1Volume">Volume (0.0-1.0):</label>
+                    <input type="range" id="layer1Volume" name="layer1Volume" step="0.01" min="0" max="1" value="0.7" class="slider" oninput="updateParamOutput('layer1Volume')">
+                    <span class="param-value" id="layer1VolumeOutput">0.7</span>
+                  </div>
+                  
+                  <div class="layer" id="layer2">
+                    <h4>Layer 2</h4>
+                    <label for="layer2Type">Sound Type:</label>
+                    <select id="layer2Type" name="layer2Type">
+                      <option value="none">None</option>
+                      <option value="wind">Wind</option>
+                      <option value="ocean">Ocean</option>
+                      <option value="leaves">Leaves</option>
+                      <option value="fire">Fire</option>
+                      <option value="noise">Noise</option>
+                      <option value="synthesizer">Synthesizer</option>
+                    </select>
+                    
+                    <label for="layer2Volume">Volume (0.0-1.0):</label>
+                    <input type="range" id="layer2Volume" name="layer2Volume" step="0.01" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('layer2Volume')">
+                    <span class="param-value" id="layer2VolumeOutput">0.5</span>
+                  </div>
+                  
+                  <div class="layer" id="layer3">
+                    <h4>Layer 3</h4>
+                    <label for="layer3Type">Sound Type:</label>
+                    <select id="layer3Type" name="layer3Type">
+                      <option value="none">None</option>
+                      <option value="wind">Wind</option>
+                      <option value="ocean">Ocean</option>
+                      <option value="leaves">Leaves</option>
+                      <option value="fire">Fire</option>
+                      <option value="noise">Noise</option>
+                      <option value="synthesizer">Synthesizer</option>
+                      <option value="footsteps">Footsteps</option>
+                    </select>
+                    
+                    <label for="layer3Volume">Volume (0.0-1.0):</label>
+                    <input type="range" id="layer3Volume" name="layer3Volume" step="0.01" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('layer3Volume')">
+                    <span class="param-value" id="layer3VolumeOutput">0.3</span>
+                  </div>
+                </div>
+                
+                <label for="layerMixing">Layer Mixing Mode:</label>
+                <select id="layerMixing" name="layerMixing">
+                  <option value="normal">Normal</option>
+                  <option value="additive">Additive</option>
+                  <option value="modulating">Modulating</option>
+                </select>
+              </div>
+            </fieldset>
+
             <!-- Global Spatial Parameters - now with collapsed class -->
             <fieldset id="spatialParams" class="collapsible-section collapsed">
               <legend class="collapse-toggle">Spatial Parameters <span class="collapse-icon">▼</span></legend>
@@ -538,6 +737,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Hidden soundType input for backward compatibility -->
+    <input type="hidden" id="soundType" value="custom">
 
     <!-- Three.js from a CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

@@ -810,7 +810,7 @@ function decodeCompactKey(compactKey) {
 }
 
 ///////////////////////////
-// Procedural Synthesis Module
+// Enhanced Sound Generator Module
 ///////////////////////////
 const SoundGenerator = {
   // Reusable white noise buffer.
@@ -1314,6 +1314,813 @@ const SoundGenerator = {
       console.error("Error creating formant buffer:", error);
       return this.createNoiseBuffer(audioCtx, 1);
     }
+  },
+
+  // LEAVES buffer - improved with more realistic parameters
+  createLeavesBuffer: function(audioCtx, params) {
+    try {
+      // Create a longer buffer for more realistic leaves rustling
+      const duration = 4;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Extract parameters with defaults
+      const rustleIntensity = params.rustleIntensity || 0.5;
+      const leafDensity = params.leafDensity !== undefined ? params.leafDensity / 100 : 0.5;
+      const moisture = params.leafMoisture || 0.2; // How wet/dry the leaves are
+      const seasonFactor = params.leafSeasonFactor || 0.5; // 0=spring (soft), 1=fall (crispy)
+      const leafSize = params.leafSize || 0.5; // Size of leaves affects sound
+      const leafType = params.leafType || 'generic';
+      
+      // Pre-calculate leaf type modifier
+      let typeModifier = 1.0;
+      if (leafType === 'oak') typeModifier = 1.2;
+      else if (leafType === 'pine') typeModifier = 0.7;
+      else if (leafType === 'maple') typeModifier = 1.1;
+      else if (leafType === 'birch') typeModifier = 0.9;
+      
+      // Frequency ranges affected by parameters
+      const baseFreqMin = 800 + (1 - moisture) * 1200 + seasonFactor * 1000;
+      const baseFreqMax = baseFreqMin + 1200 + seasonFactor * 800;
+      
+      // Create various leaf sounds at different rates based on density
+      let lastCrackle = -1000; // Time since last crackle
+      const numCrackleSources = Math.ceil(leafDensity * 15) + 2; // More density = more sources
+      const crackleSources = [];
+      
+      for (let i = 0; i < numCrackleSources; i++) {
+        crackleSources.push({
+          rate: 0.1 + Math.random() * 0.3, // How often this source creates sound
+          lastTime: -Math.random() * 1000, // Randomize start times
+          freq: baseFreqMin + Math.random() * (baseFreqMax - baseFreqMin),
+          amplitude: 0.3 + Math.random() * 0.7
+        });
+      }
+      
+      // Generate leaf rustle sounds
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        let sample = 0;
+        
+        // Background rustle noise (filtered)
+        let rustle = (Math.random() * 2 - 1) * 0.2 * rustleIntensity;
+        
+        // Seasonal and moisture filter 
+        // (dry fall leaves are more high frequency, wet spring leaves more muffled)
+        rustle = rustle * (1 - moisture * 0.7) * (0.4 + seasonFactor * 0.6);
+        
+        // Add occasional crackles from our crackle sources
+        for (let src of crackleSources) {
+          if (t - src.lastTime > src.rate / rustleIntensity) {
+            // Time for a new crackle
+            src.lastTime = t;
+            src.freq = baseFreqMin + Math.random() * (baseFreqMax - baseFreqMin);
+          }
+          
+          // Calculate crackle sound if it's active
+          const crackleAge = t - src.lastTime;
+          if (crackleAge < 0.05) { // Crackle duration
+            // Create short, sharp filter sweep to simulate leaf crack
+            const crackEnv = Math.exp(-crackleAge * (50 + seasonFactor * 100));
+            const crackSound = Math.sin(2 * Math.PI * src.freq * crackleAge) * crackEnv;
+            sample += crackSound * src.amplitude * leafDensity * (0.5 + seasonFactor * 0.5);
+          }
+        }
+        
+        // Add wind movement through leaves (subtle whistling)
+        const windModulation = Math.sin(2 * Math.PI * 0.5 * t) * 0.1;
+        
+        // Combine all elements and apply leaf density
+        data[i] = (rustle + sample + windModulation) * leafDensity * typeModifier;
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating leaf rustle buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 4);
+    }
+  },
+
+  // FIRE buffer - improved with more realistic parameters
+  createFireBuffer: function(audioCtx, params) {
+    try {
+      const duration = 5;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Extract enhanced parameters with defaults
+      const fireIntensity = params.fireIntensity || 0.5;
+      const crackleFreq = params.crackleFrequency || 5;
+      const crackleIntensity = params.crackleIntensity || 0.6;
+      const flickerSpeed = params.flickerSpeed || 1.0;
+      const fuelType = params.fuelType || 'wood';
+      const flameTemp = params.flameTemp || 'neutral';
+      const emberIntensity = params.emberIntensity || 0.3;
+      const windEffect = params.fireWindEffect || 0.2;
+      
+      // Adjust parameters based on fuel type
+      let baseNoiseFreq = 1.0;
+      let crackleFreqMod = 1.0;
+      let crackleDecay = 0.05;
+      
+      if (fuelType === 'wood') {
+        crackleFreqMod = 1.0;
+        crackleDecay = 0.05;
+      } else if (fuelType === 'gas') {
+        crackleFreqMod = 0.2; // Less crackles
+        baseNoiseFreq = 1.5; // Higher hiss
+        crackleDecay = 0.02; // Shorter crackles
+      } else if (fuelType === 'charcoal') {
+        crackleFreqMod = 1.5; // More crackles
+        baseNoiseFreq = 0.7; // Lower rumble
+        crackleDecay = 0.08; // Longer crackles
+      }
+      
+      // Temperature affects the base frequency
+      let tempFactor = 1.0;
+      if (flameTemp === 'cool') tempFactor = 0.8;
+      else if (flameTemp === 'warm') tempFactor = 1.2;
+      
+      // Create ember pop timings (more intense fire = more embers)
+      const numEmberSources = Math.ceil(fireIntensity * 10) + 2;
+      const emberSources = [];
+      for (let i = 0; i < numEmberSources; i++) {
+        emberSources.push({
+          time: Math.random() * duration,
+          frequency: 800 + Math.random() * 1200,
+          amplitude: 0.3 + Math.random() * 0.7
+        });
+      }
+      
+      // Current low frequency patterns for proper fire rumble simulation
+      let lowFilter = 0;
+      
+      // Create crackling fire sound with more variation
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Base fire noise (varied frequency content based on parameters)
+        // Use pink-like noise for more realistic fire base
+        const noise = (Math.random() * 2 - 1);
+        let lowPassNoise = lowFilter * 0.95 + noise * 0.05;
+        lowFilter = lowPassNoise;
+        
+        // Add crackling effect with better variation
+        let crackle = 0;
+        if (Math.random() < (crackleFreq * crackleFreqMod / 100)) {
+          // Randomly trigger crackling sounds with varied characteristics
+          const crackleLength = Math.floor(audioCtx.sampleRate * crackleDecay * (0.8 + Math.random() * 0.4));
+          if (i + crackleLength < bufferSize) {
+            const crackleFrequency = 1000 + Math.random() * 2000;
+            for (let j = 0; j < crackleLength; j++) {
+              // Create a sharper, more varied crackle
+              const cracklePhase = j / crackleLength;
+              const crackleEnv = Math.exp(-10 * cracklePhase) * (1 - cracklePhase);
+              const crackleSin = Math.sin(2 * Math.PI * crackleFrequency * (j / audioCtx.sampleRate));
+              data[i + j] += crackleSin * crackleEnv * crackleIntensity * (0.8 + Math.random() * 0.4);
+            }
+          }
+        }
+        
+        // Check for ember pops
+        for (const ember of emberSources) {
+          const timeDiff = Math.abs(t - ember.time);
+          if (timeDiff < 0.08) { // Duration of ember pop
+            const emberPop = Math.sin(2 * Math.PI * ember.frequency * timeDiff) * 
+                            Math.exp(-timeDiff * 50) * ember.amplitude * emberIntensity;
+            crackle += emberPop;
+          }
+        }
+        
+        // Add slow modulation for the fire base (based on flicker speed)
+        const flicker = Math.sin(2 * Math.PI * flickerSpeed * 0.5 * t) * 0.2;
+        
+        // Add wind effect (causes volume fluctuations)
+        const windMod = 1.0 + Math.sin(2 * Math.PI * 0.3 * t) * windEffect;
+        
+        // Combine all elements
+        data[i] += ((lowPassNoise * 0.4 + flicker) * fireIntensity * tempFactor * baseNoiseFreq + crackle) * windMod;
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating fire buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 4);
+    }
+  },
+  
+  // OCEAN buffer - significantly improved for more realistic waves
+  createOceanBuffer: function(audioCtx, params) {
+    try {
+      const duration = 6;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Extract enhanced parameters
+      const waveFreq = params.waveFrequency || 0.5;
+      const waveHeight = (params.waveHeight || 60) / 100;
+      const surfIntensity = params.surfIntensity || 0.7;
+      const oceanDepth = params.oceanDepth || 'medium';
+      const shoreType = params.shoreType || 'sandy';  
+      const distance = params.oceanDistance || 0.5; // 0=at shore, 1=distant
+      const stormy = params.oceanStormy || 0.0; // How stormy the sea is
+      
+      // Depth affects frequency content
+      let depthFactor = 1.0;
+      if (oceanDepth === 'shallow') depthFactor = 1.3;
+      else if (oceanDepth === 'deep') depthFactor = 0.7;
+      
+      // Shore type affects high-frequency content (bubbles, splashes)
+      let shoreResonance = 1.0;
+      let shoreFreq = 1000;
+      if (shoreType === 'rocky') {
+        shoreResonance = 1.4;
+        shoreFreq = 1200;
+      }
+      else if (shoreType === 'pebbly') {
+        shoreResonance = 1.2;
+        shoreFreq = 900;
+      }
+      
+      // Create multiple wave cycles with different frequencies for more natural sound
+      const waveCycles = [];
+      const numWaves = 3 + Math.floor(waveHeight * 2);
+      
+      for (let i = 0; i < numWaves; i++) {
+        waveCycles.push({
+          frequency: waveFreq * (0.8 + 0.4 * Math.random()),
+          phase: Math.random() * Math.PI * 2,
+          amplitude: 0.6 + 0.4 * Math.random()
+        });
+      }
+      
+      // Surf splash occurrences
+      const numSplashes = Math.ceil(surfIntensity * 5) + Math.ceil(stormy * 5);
+      const splashes = [];
+      
+      for (let i = 0; i < numSplashes; i++) {
+        splashes.push({
+          time: i * (duration / numSplashes) + Math.random() * 0.5,
+          intensity: 0.5 + Math.random() * 0.5,
+          decay: 0.1 + Math.random() * 0.2
+        });
+      }
+      
+      // Main ocean buffer generation
+      let lowPassNoise = 0; // For low-frequency rumble
+      
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        
+        // Base ocean noise (filtered based on depth)
+        const noise = Math.random() * 2 - 1;
+        lowPassNoise = lowPassNoise * 0.98 + noise * 0.02; // Low-pass filter for rumble
+        
+        // Create wave pattern from multiple frequencies
+        let wavePattern = 0;
+        for (const wave of waveCycles) {
+          wavePattern += Math.sin(2 * Math.PI * wave.frequency * t + wave.phase) * wave.amplitude;
+        }
+        wavePattern /= numWaves; // Normalize
+        
+        // Add storm effect (increases high-frequency content)
+        let stormNoise = 0;
+        if (stormy > 0) {
+          stormNoise = (Math.random() * 2 - 1) * stormy * 0.3;
+        }
+        
+        // Apply surf splashes
+        let splash = 0;
+        for (const splashEvent of splashes) {
+          const timeDiff = Math.abs(t - splashEvent.time);
+          if (timeDiff < splashEvent.decay) {
+            // Create realistic splash with high-frequency content
+            const splashEnv = Math.exp(-timeDiff / splashEvent.decay * 10);
+            splash += ((Math.random() * 2 - 1) * 0.7 + 
+                      Math.sin(2 * Math.PI * shoreFreq * timeDiff) * 0.3) * 
+                      splashEnv * splashEvent.intensity * surfIntensity * shoreResonance;
+          }
+        }
+        
+        // Distance affects mix between surf and wave sounds
+        const surfFactor = Math.max(0, 1 - distance);
+        const waveFactor = distance * 0.7 + 0.3;
+        
+        // Combine all elements with proper weighting
+        data[i] = (
+          (lowPassNoise * 0.3 + noise * 0.1) * depthFactor * waveHeight * waveFactor + 
+          wavePattern * 0.4 * waveHeight * depthFactor * (waveFactor + 0.2) +
+          splash * surfFactor +
+          stormNoise
+        );
+      }
+      
+      // Normalize
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating ocean buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 6);
+    }
+  },
+  
+  // FOOTSTEPS buffer - completely redesigned for realistic material-based footsteps
+  createFootstepsBuffer: function(audioCtx, params) {
+    try {
+      // Longer duration for more natural step sound
+      const duration = 0.7;
+      const bufferSize = Math.floor(duration * audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Extract enhanced parameters
+      const footstepVolume = params.footstepVolume || 0.6;
+      const footwearType = params.footwearType || 'sneakers';
+      const stepSurface = params.stepSurface || 'grass';
+      const weight = params.stepWeight || 0.5; // 0=light, 1=heavy
+      const wetness = params.surfaceWetness || 0; // 0=dry, 1=wet/puddle
+      
+      // Parameters derived from footwear type
+      let impactSharpness = 0.5;
+      let scrapeIntensity = 0.2;
+      let highFreqContent = 0.5;
+      
+      switch (footwearType) {
+        case 'sneakers':
+          impactSharpness = 0.4;
+          scrapeIntensity = 0.3;
+          highFreqContent = 0.4;
+          break;
+        case 'boots':
+          impactSharpness = 0.7;
+          scrapeIntensity = 0.3;
+          highFreqContent = 0.6;
+          break;
+        case 'sandals':
+          impactSharpness = 0.3;
+          scrapeIntensity = 0.5;
+          highFreqContent = 0.5;
+          break;
+        case 'barefoot':
+          impactSharpness = 0.2;
+          scrapeIntensity = 0.1;
+          highFreqContent = 0.3;
+          break;
+        case 'heels':
+          impactSharpness = 0.9;
+          scrapeIntensity = 0.2;
+          highFreqContent = 0.8;
+          break;
+      }
+      
+      // Parameters derived from surface type
+      let surfaceResonance = 0.3;
+      let surfaceHardness = 0.5;
+      let lowFreqResponse = 0.5;
+      let surfaceGrain = 0.3; // For granular surfaces like gravel
+      let surfaceCreak = 0; // For wooden surfaces
+      
+      switch (stepSurface) {
+        case 'grass':
+          surfaceResonance = 0.1;
+          surfaceHardness = 0.2;
+          lowFreqResponse = 0.3;
+          surfaceGrain = 0.3;
+          break;
+        case 'gravel':
+          surfaceResonance = 0.2;
+          surfaceHardness = 0.5;
+          lowFreqResponse = 0.4;
+          surfaceGrain = 0.9;
+          break;
+        case 'wood':
+          surfaceResonance = 0.7;
+          surfaceHardness = 0.6;
+          lowFreqResponse = 0.7;
+          surfaceGrain = 0.1;
+          surfaceCreak = 0.3;
+          break;
+        case 'tile':
+          surfaceResonance = 0.8;
+          surfaceHardness = 0.9;
+          lowFreqResponse = 0.3;
+          surfaceGrain = 0.05;
+          break;
+        case 'concrete':
+          surfaceResonance = 0.4;
+          surfaceHardness = 1.0;
+          lowFreqResponse = 0.6;
+          surfaceGrain = 0.1;
+          break;
+        case 'metal':
+          surfaceResonance = 0.9;
+          surfaceHardness = 1.0;
+          lowFreqResponse = 0.2;
+          surfaceGrain = 0.05;
+          break;
+        case 'carpet':
+          surfaceResonance = 0.1;
+          surfaceHardness = 0.1;
+          lowFreqResponse = 0.2;
+          surfaceGrain = 0.05;
+          break;
+        case 'snow':
+          surfaceResonance = 0.1;
+          surfaceHardness = 0.3;
+          lowFreqResponse = 0.2;
+          surfaceGrain = 0.4;
+          break;
+      }
+      
+      // Add wetness effects
+      if (wetness > 0) {
+        // Wet surfaces have more high-frequency splash content
+        surfaceHardness *= (1 - wetness * 0.3); // Wet surfaces are slightly softer
+        surfaceGrain *= (1 - wetness * 0.5); // Less grain sound when wet
+        highFreqContent *= (1 + wetness * 0.7); // More high freq for splashes
+      }
+      
+      // Adjust parameters based on weight
+      const weightedImpact = impactSharpness * (0.7 + weight * 0.6);
+      lowFreqResponse *= (0.5 + weight * 0.8); // Heavier steps have more bass
+      
+      // Calculate resonant frequency based on surface - harder surfaces are higher pitched
+      const mainResonance = 100 + surfaceHardness * 400;
+      
+      // Create initial impact
+      const attackTime = 0.002 + (1 - impactSharpness) * 0.01;
+      const decayTime = 0.05 + (1 - surfaceHardness) * 0.3;
+      
+      // Step usually has two parts: heel strike and toe push-off
+      const heelTime = 0;
+      const toeTime = 0.15 + (1 - weight) * 0.1; // Lighter steps have faster toe follow-up
+      
+      // Create grain particles for granular surfaces (gravel, etc)
+      const numGrains = Math.ceil(surfaceGrain * 20);
+      const grains = [];
+      
+      for (let i = 0; i < numGrains; i++) {
+        grains.push({
+          time: 0.01 + Math.random() * 0.2,
+          frequency: 2000 + Math.random() * 6000,
+          amplitude: 0.3 + Math.random() * 0.7,
+          decay: 0.01 + Math.random() * 0.05
+        });
+      }
+      
+      // Create splashes if wet
+      const numSplashes = Math.ceil(wetness * 10);
+      const splashes = [];
+      
+      for (let i = 0; i < numSplashes; i++) {
+        splashes.push({
+          time: 0.01 + Math.random() * 0.2,
+          frequency: 3000 + Math.random() * 5000,
+          amplitude: 0.4 + Math.random() * 0.6,
+          decay: 0.02 + Math.random() * 0.1
+        });
+      }
+      
+      // Generate the footstep buffer
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioCtx.sampleRate;
+        let sample = 0;
+        
+        // Heel strike (first impact)
+        if (t >= heelTime) {
+          const heelPhase = t - heelTime;
+          let heelEnv;
+          if (heelPhase < attackTime) {
+            heelEnv = heelPhase / attackTime; // Linear attack
+          } else {
+            heelEnv = Math.exp(-(heelPhase - attackTime) / decayTime);
+          }
+          
+          // Main impact sound with resonance
+          const impact = Math.sin(2 * Math.PI * mainResonance * heelPhase) * 
+                        surfaceHardness * heelEnv * weightedImpact;
+          
+          // Add low frequency thump for weight
+          const thump = Math.sin(2 * Math.PI * (mainResonance * 0.5) * heelPhase) * 
+                        lowFreqResponse * heelEnv * weight;
+          
+          // High frequency content for sharp impacts
+          const highFreq = Math.sin(2 * Math.PI * mainResonance * 3 * heelPhase) * 
+                          highFreqContent * heelEnv * surfaceHardness;
+          
+          sample += impact * 0.6 + thump * 0.3 + highFreq * 0.1;
+          
+          // Add resonance for resonant surfaces
+          if (surfaceResonance > 0.3) {
+            const resonFreq = mainResonance * 1.7;
+            const resonance = Math.sin(2 * Math.PI * resonFreq * heelPhase) * 
+                             Math.exp(-(heelPhase) / (decayTime * 2)) * 
+                             surfaceResonance;
+            sample += resonance * 0.3;
+          }
+        }
+        
+        // Toe push-off (second impact, softer)
+        if (t >= toeTime) {
+          const toePhase = t - toeTime;
+          const toeEnv = Math.exp(-toePhase / (decayTime * 0.7));
+          
+          const toeImpact = Math.sin(2 * Math.PI * (mainResonance * 1.2) * toePhase) * 
+                           surfaceHardness * toeEnv * weightedImpact * 0.4;
+          
+          sample += toeImpact * 0.3;
+        }
+        
+        // Add grains for granular surfaces
+        if (surfaceGrain > 0.1) {
+          for (const grain of grains) {
+            const grainPhase = t - grain.time;
+            if (grainPhase > 0 && grainPhase < grain.decay * 3) {
+              const grainEnv = Math.exp(-grainPhase / grain.decay);
+              const grainSound = (Math.random() * 2 - 1) * grainEnv * grain.amplitude * surfaceGrain;
+              sample += grainSound * 0.15;
+            }
+          }
+        }
+        
+        // Add creaking for wooden surfaces
+        if (surfaceCreak > 0.1 && t > 0.1 && t < 0.4) {
+          const creakFreq = 800 + Math.sin(t * 20) * 400;
+          const creakEnv = Math.sin(t * 15) * Math.exp(-(t - 0.1) / 0.3) * surfaceCreak;
+          const creak = Math.sin(2 * Math.PI * creakFreq * t) * creakEnv * 0.1;
+          sample += creak;
+        }
+        
+        // Add splash sounds if wet
+        if (wetness > 0.1) {
+          for (const splash of splashes) {
+            const splashPhase = t - splash.time;
+            if (splashPhase > 0 && splashPhase < splash.decay * 3) {
+              const splashEnv = Math.exp(-splashPhase / splash.decay);
+              const splashNoise = (Math.random() * 2 - 1) * 0.7;
+              const splashSin = Math.sin(2 * Math.PI * splash.frequency * splashPhase);
+              const splashSound = (splashNoise * 0.7 + splashSin * 0.3) * 
+                                 splashEnv * splash.amplitude * wetness;
+              sample += splashSound * 0.2;
+            }
+          }
+        }
+        
+        // Add subtle friction/scuff sound based on footwear and surface
+        if (scrapeIntensity > 0.1 && t > toeTime && t < toeTime + 0.2) {
+          const scrapePhase = t - toeTime;
+          const scrapeEnv = Math.exp(-scrapePhase / 0.1) * scrapePhase * 5;
+          const scrapeNoise = (Math.random() * 2 - 1) * scrapeIntensity * scrapeEnv * 0.2;
+          sample += scrapeNoise;
+        }
+        
+        data[i] = sample * footstepVolume;
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        max = Math.max(max, Math.abs(data[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] /= max;
+        }
+      }
+      
+      return buffer;
+    } catch (error) {
+      console.error("Error creating footstep buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 0.3);
+    }
+  },
+
+  // New function to combine multiple sound sources
+  createLayeredSoundBuffer: function(audioCtx, params) {
+    try {
+      // Determine the maximum duration among all component sounds
+      let maxDuration = 4; // Default duration
+      const layerConfig = params.soundLayers || [];
+      
+      // Create each layer's buffer
+      const layerBuffers = [];
+      
+      for (const layer of layerConfig) {
+        let layerParams = {};
+        
+        // Copy main parameters and override with layer-specific ones
+        Object.assign(layerParams, params);
+        Object.assign(layerParams, layer.params);
+        
+        // Generate the appropriate buffer type
+        let buffer;
+        switch (layer.type) {
+          case 'wind':
+            buffer = this.createWindBuffer(audioCtx, layerParams);
+            break;
+          case 'ocean':
+            buffer = this.createOceanBuffer(audioCtx, layerParams);
+            break;
+          case 'leaves':
+            buffer = this.createLeavesBuffer(audioCtx, layerParams);
+            break;
+          case 'fire':
+            buffer = this.createFireBuffer(audioCtx, layerParams);
+            break;
+          case 'footsteps':
+            buffer = this.createFootstepsBuffer(audioCtx, layerParams);
+            break;
+          case 'synthesizer':
+            buffer = this.createSynthBuffer(audioCtx, layerParams);
+            break;
+          case 'percussion':
+            buffer = this.createPercussionBuffer(audioCtx, layerParams);
+            break;
+          case 'noise':
+            buffer = this.createColoredNoiseBuffer(audioCtx, layerParams);
+            break;
+          default:
+            buffer = this.createNoiseBuffer(audioCtx, 2);
+            break;
+        }
+        
+        layerBuffers.push({
+          buffer: buffer,
+          volume: layer.volume || 1.0
+        });
+        
+        // Update max duration
+        if (buffer.duration > maxDuration) {
+          maxDuration = buffer.duration;
+        }
+      }
+      
+      // Create output buffer with the maximum duration
+      const outputBuffer = audioCtx.createBuffer(
+        1, // mono
+        Math.ceil(audioCtx.sampleRate * maxDuration),
+        audioCtx.sampleRate
+      );
+      const outputData = outputBuffer.getChannelData(0);
+      
+      // Mix all layers into the output buffer
+      for (const layer of layerBuffers) {
+        const layerData = layer.buffer.getChannelData(0);
+        const layerVolume = layer.volume;
+        
+        // Add the layer data to the output buffer
+        for (let i = 0; i < layerData.length; i++) {
+          if (i < outputData.length) {
+            outputData[i] += layerData[i] * layerVolume;
+          }
+        }
+      }
+      
+      // Normalize to avoid clipping
+      let max = 0;
+      for (let i = 0; i < outputData.length; i++) {
+        max = Math.max(max, Math.abs(outputData[i]));
+      }
+      if (max > 1) {
+        for (let i = 0; i < outputData.length; i++) {
+          outputData[i] /= max;
+        }
+      }
+      
+      return outputBuffer;
+    } catch (error) {
+      console.error("Error creating layered sound buffer:", error);
+      return this.createNoiseBuffer(audioCtx, 3);
+    }
+  },
+  
+  // New environmental sound generator function
+  createEnvironmentalSound: function(audioCtx, params) {
+    // Extract environment type and conditions
+    const environment = params.environment || 'outdoor';
+    const weather = params.weather || 'clear';
+    const timeOfDay = params.timeOfDay || 'day';
+    const roomSize = params.roomSize || 'medium';
+    
+    // Build layered sound configuration
+    const layerConfig = [];
+    
+    // Add ambient base layer based on environment
+    if (environment === 'outdoor') {
+      // Base outdoor ambience
+      layerConfig.push({
+        type: 'noise',
+        params: {
+          noiseColor: 'pink',
+          noiseDensity: 0.2,
+          spectralTilt: -6
+        },
+        volume: 0.2 // Quiet background ambience
+      });
+      
+      // Add weather sounds
+      if (weather === 'rainy') {
+        layerConfig.push({
+          type: 'noise',
+          params: {
+            noiseColor: 'white',
+            noiseDensity: 0.8,
+            spectralTilt: 2
+          },
+          volume: 0.6
+        });
+      } else if (weather === 'windy') {
+        layerConfig.push({
+          type: 'wind',
+          params: {
+            windSpeed: 70,
+            windGustiness: 0.8,
+            turbulence: 0.7
+          },
+          volume: 0.7
+        });
+      }
+      
+      // Add time-based sounds
+      if (timeOfDay === 'night') {
+        // Night crickets as a synthesizer
+        layerConfig.push({
+          type: 'synthesizer',
+          params: {
+            oscType: 'sine',
+            oscFrequency: 4200,
+            harmonic1: 0.6,
+            lfoRate: 15,
+            lfoDepth: 0.7
+          },
+          volume: 0.15
+        });
+      }
+    } else {
+      // Indoor ambience
+      const roomFactor = roomSize === 'large' ? 0.8 : 
+                        (roomSize === 'small' ? 0.3 : 0.5);
+      
+      layerConfig.push({
+        type: 'noise',
+        params: {
+          noiseColor: 'brown',
+          noiseDensity: 0.3 * roomFactor,
+          spectralTilt: -8
+        },
+        volume: 0.15
+      });
+      
+      // Add HVAC system hum for indoor environments
+      layerConfig.push({
+        type: 'mechanical',
+        params: {
+          rpm: 120,
+          friction: 0.1,
+          mechanicalLooseness: 0.1,
+          mechanicalType: 'hvac'
+        },
+        volume: 0.2
+      });
+    }
+    
+    // Create the final layered sound
+    params.soundLayers = layerConfig;
+    return this.createLayeredSoundBuffer(audioCtx, params);
   }
 };
 
@@ -2991,9 +3798,20 @@ function downloadSoundFromUI() {
       case "formant":
         buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
         break;
+      case "environmental":
+        buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
+        break;
+      case "layered":
+        buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
+        break;
       case "custom":
         // For custom, determine which buffer to use based on parameters
-        if (params.oscType !== undefined) {
+        // For layered sounds, check if there's a soundLayers property
+        if (params.soundLayers) {
+          buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
+        } else if (params.environment) {
+          buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
+        } else if (params.oscType !== undefined) {
           buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
         } else if (params.impactSharpness !== undefined) {
           buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
@@ -3011,8 +3829,8 @@ function downloadSoundFromUI() {
           buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
         } else if (params.fireIntensity !== undefined) {
           buffer = SoundGenerator.createFireBuffer(audioCtx, params);
-        } else if (params.footstepVolume !== undefined) {
-          buffer = SoundGenerator.createFootstepsBuffer(audioCtx, duration);
+        } else if (params.footstepVolume !== undefined || params.stepSurface !== undefined) {
+          buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
         } else {
           buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
         }
@@ -3027,10 +3845,14 @@ function downloadSoundFromUI() {
     
     // IMPROVED: Create a longer buffer if needed for ALL sound types
     // This ensures the downloaded sound will have the full requested duration
-    if (buffer.duration < duration) {
+    let needsExtension = buffer.duration < duration;
+    let needsRendering = false;
+    
+    if (needsExtension) {
+      // Create a new buffer with the exact requested duration
       const newBuffer = audioCtx.createBuffer(
         buffer.numberOfChannels,
-        audioCtx.sampleRate * duration,
+        Math.ceil(audioCtx.sampleRate * duration),
         audioCtx.sampleRate
       );
       
@@ -3043,8 +3865,11 @@ function downloadSoundFromUI() {
         if (originalLength === 0) continue;
         
         // Properly loop the original data to fill the new buffer
+        let srcPosition = 0;
         for (let i = 0; i < newData.length; i++) {
-          newData[i] = originalData[i % originalLength];
+          // Better looping logic with smoother transitions
+          newData[i] = originalData[srcPosition];
+          srcPosition = (srcPosition + 1) % originalLength;
         }
       }
       
@@ -3053,47 +3878,11 @@ function downloadSoundFromUI() {
     
     // Apply basic audio processing if needed
     if (params.soundType === "wind" && params.windSpeed !== undefined) {
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = "bandpass";
-      let cutoff = 200 + (params.windSpeed / 100) * 1800;
-      filter.frequency.value = cutoff;
-      
-      const tempBuffer = audioCtx.createBuffer(
-        buffer.numberOfChannels,
-        buffer.length,
-        buffer.sampleRate
-      );
-      
-      // Process audio through filter and capture to new buffer
-      const offlineCtx = new OfflineAudioContext(
-        buffer.numberOfChannels,
-        buffer.length,
-        buffer.sampleRate
-      );
-      
-      const offlineSource = offlineCtx.createBufferSource();
-      offlineSource.buffer = buffer;
-      
-      const offlineFilter = offlineCtx.createBiquadFilter();
-      offlineFilter.type = "bandpass";
-      offlineFilter.frequency.value = cutoff;
-      
-      offlineSource.connect(offlineFilter);
-      offlineFilter.connect(offlineCtx.destination);
-      offlineSource.start();
-      
-      // Render and use the processed buffer
-      offlineCtx.startRendering().then(processedBuffer => {
-        buffer = processedBuffer;
-        finishDownload();
-      });
-    } else {
-      finishDownload();
+      // ... existing wind processing code ...
+      needsRendering = true;
     }
     
+    // Define the finish download function
     function finishDownload() {
       // Convert the buffer to WAV format
       const wavBuffer = createWavFromAudioBuffer(buffer);
@@ -3102,8 +3891,9 @@ function downloadSoundFromUI() {
       const blob = new Blob([wavBuffer], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       
-      // Create a meaningful filename
-      const filename = `sound_${params.soundType || 'custom'}_${Math.floor(Date.now() / 1000)}.wav`;
+      // Create a meaningful filename with sound key
+      const shortKey = key.replace(/^SK-/, '').split('-')[0];
+      const filename = `sound_${params.soundType}_${shortKey}_${duration}s.wav`;
       
       // Create and trigger a download link
       const downloadLink = document.createElement("a");
@@ -3118,6 +3908,46 @@ function downloadSoundFromUI() {
       audioCtx.close();
       
       document.getElementById('playStatus').textContent = "Sound downloaded successfully!";
+    }
+    
+    if (needsRendering) {
+      // For sounds that need processing, use an offline audio context
+      const offlineCtx = new OfflineAudioContext(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+      );
+      
+      const offlineSource = offlineCtx.createBufferSource();
+      offlineSource.buffer = buffer;
+      
+      // Apply effects specific to the sound type
+      if (params.soundType === "wind" && params.windSpeed !== undefined) {
+        const filter = offlineCtx.createBiquadFilter();
+        filter.type = "bandpass";
+        let cutoff = 200 + (params.windSpeed / 100) * 1800;
+        filter.frequency.value = cutoff;
+        
+        offlineSource.connect(filter);
+        filter.connect(offlineCtx.destination);
+      } else {
+        offlineSource.connect(offlineCtx.destination);
+      }
+      
+      offlineSource.start();
+      
+      // Render and use the processed buffer
+      offlineCtx.startRendering().then(processedBuffer => {
+        buffer = processedBuffer;
+        finishDownload();
+      }).catch(err => {
+        console.error("Rendering failed:", err);
+        // Fallback to unprocessed buffer
+        finishDownload();
+      });
+    } else {
+      // For sounds that don't need processing, proceed directly
+      finishDownload();
     }
   } catch (error) {
     console.error("Error generating sound for download:", error);
