@@ -478,20 +478,23 @@ function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
 
-  // Capture ALL parameters, not just the selected ones
-  for (const category in allParameters) {
-    for (const param in allParameters[category].params) {
-      const element = document.getElementById(param);
-      if (element) {
-        if (element.type === "number" || element.tagName === "SELECT" || 
-            element.classList.contains('slider')) {
-          // Convert to appropriate type (number or string)
-          params[param] = element.type === "number" || element.classList.contains('slider') ? 
-                          parseFloat(element.value) : element.value;
+  // Only capture selected parameters instead of all parameters
+  selectedParameters.forEach(param => {
+    const element = document.getElementById(param);
+    if (element) {
+      if (element.type === "number" || element.tagName === "SELECT" || 
+          element.classList.contains('slider')) {
+        // Extract the value based on the element type
+        let value;
+        if (element.type === "number" || element.classList.contains('slider')) {
+          value = parseFloat(element.value);
+        } else {
+          value = element.value;
         }
+        params[param] = value;
       }
     }
-  }
+  });
 
   const paramString = JSON.stringify(params);
   
@@ -518,6 +521,7 @@ function generateSoundKey() {
   document.getElementById('soundKeyInput').value = keyToUse;
 }
 
+// Also update the compact key generation function to only include selected parameters
 /**
  * Generates a compact key from sound parameters
  * @param {Object} params - The sound parameters
@@ -544,108 +548,107 @@ function generateCompactKey(params) {
   
   keyParts.push(typeMap[params.soundType] || 'c');
   
-  // Add most important parameters based on sound type
-  // This approach maps the most important parameters for each sound type to
-  // a compact representation, using 2-3 digits for each parameter
-  
-  const addParam = (param, multiplier = 100, digits = 2) => {
-    if (params[param] !== undefined) {
+  // Helper to check if parameter is selected and add it if it is
+  const addParamIfSelected = (param, multiplier = 100, digits = 2) => {
+    if (params[param] !== undefined && selectedParameters.has(param)) {
       // Scale the parameter to an integer and format with leading zeros
       const value = Math.round(params[param] * multiplier);
       keyParts.push(value.toString().padStart(digits, '0'));
+      return true;
     }
+    return false;
   };
   
-  // Add type-specific parameters
+  // Add type-specific parameters that are selected
   switch (params.soundType) {
     case 'wind':
-      addParam('windSpeed', 1, 2);
-      addParam('windGustiness');
-      addParam('turbulence');
+      addParamIfSelected('windSpeed', 1, 2);
+      addParamIfSelected('windGustiness');
+      addParamIfSelected('turbulence');
       break;
       
     case 'ocean':
-      addParam('waveHeight', 1, 2);
-      addParam('waveFrequency');
-      addParam('surfIntensity');
+      addParamIfSelected('waveHeight', 1, 2);
+      addParamIfSelected('waveFrequency');
+      addParamIfSelected('surfIntensity');
       break;
       
     case 'leaves':
-      addParam('rustleIntensity');
-      addParam('leafDensity', 1, 2);
+      addParamIfSelected('rustleIntensity');
+      addParamIfSelected('leafDensity', 1, 2);
       break;
       
     case 'fire':
-      addParam('fireIntensity');
-      addParam('crackleFrequency', 10, 2);
-      addParam('crackleIntensity');
+      addParamIfSelected('fireIntensity');
+      addParamIfSelected('crackleFrequency', 10, 2);
+      addParamIfSelected('crackleIntensity');
       break;
       
     case 'footsteps':
-      addParam('footstepVolume');
-      addParam('stepFrequency', 1, 3);
+      addParamIfSelected('footstepVolume');
+      addParamIfSelected('stepFrequency', 1, 3);
       break;
       
     case 'synthesizer':
-      // For synth, we'll encode oscillator type as a letter
-      const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
-      keyParts.push(oscTypeMap[params.oscType] || 'i');
-      addParam('oscFrequency', 0.1, 3); // 0-2000Hz mapped to 0-200
-      addParam('harmonic1');
-      addParam('harmonic2');
+      // For synth, we'll encode oscillator type as a letter if it's selected
+      if (selectedParameters.has('oscType')) {
+        const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
+        keyParts.push(oscTypeMap[params.oscType] || 'i');
+      }
+      addParamIfSelected('oscFrequency', 0.1, 3);
+      addParamIfSelected('harmonic1');
+      addParamIfSelected('harmonic2');
       break;
       
     case 'percussion':
-      addParam('impactSharpness');
-      addParam('bodyResonance');
-      addParam('decayLength');
+      addParamIfSelected('impactSharpness');
+      addParamIfSelected('bodyResonance');
+      addParamIfSelected('decayLength');
       break;
       
     case 'noise':
-      // For noise, encode color as a letter
-      const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
-      keyParts.push(colorMap[params.noiseColor] || 'w');
-      addParam('noiseDensity');
-      addParam('spectralTilt', 10, 2); // -12 to 12 mapped to -120 to 120
+      // For noise, encode color as a letter if it's selected
+      if (selectedParameters.has('noiseColor')) {
+        const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
+        keyParts.push(colorMap[params.noiseColor] || 'w');
+      }
+      addParamIfSelected('noiseDensity');
+      addParamIfSelected('spectralTilt', 10, 2);
       break;
       
     case 'mechanical':
-      addParam('rpm', 0.1, 3); // 0-1200 mapped to 0-120
-      addParam('friction');
-      addParam('mechanicalLooseness');
+      addParamIfSelected('rpm', 0.1, 3);
+      addParamIfSelected('friction');
+      addParamIfSelected('mechanicalLooseness');
       break;
       
     case 'formant':
-      addParam('formant1', 0.1, 2); // 200-800 mapped to 20-80
-      addParam('formant2', 0.01, 2); // 800-2400 mapped to 8-24
-      addParam('breathiness');
-      addParam('vibrato');
+      addParamIfSelected('formant1', 0.1, 2);
+      addParamIfSelected('formant2', 0.01, 2);
+      addParamIfSelected('breathiness');
+      addParamIfSelected('vibrato');
       break;
       
     case 'custom':
-      // For custom, determine which parameters to include
-      // based on the available parameters
-      if (params.oscType) {
-        // Synth-like
+      // For custom, determine which parameters to include based on selections
+      if (selectedParameters.has('oscType')) {
         const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
         keyParts.push(oscTypeMap[params.oscType] || 'i');
-        addParam('oscFrequency', 0.1, 3);
-      } else if (params.impactSharpness) {
-        // Percussion-like
-        addParam('impactSharpness');
-        addParam('bodyResonance');
-      } else if (params.noiseColor) {
-        // Noise-like
+        addParamIfSelected('oscFrequency', 0.1, 3);
+      } else if (selectedParameters.has('impactSharpness')) {
+        addParamIfSelected('impactSharpness');
+        addParamIfSelected('bodyResonance');
+      } else if (selectedParameters.has('noiseColor')) {
         const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
         keyParts.push(colorMap[params.noiseColor] || 'w');
-        addParam('noiseDensity');
+        addParamIfSelected('noiseDensity');
       }
       break;
   }
   
-  // Always add spatial parameters
-  addParam('refDistance', 1, 2);
-  addParam('rolloff', 10, 2);
+  // Add spatial parameters if they're selected
+  addParamIfSelected('refDistance', 1, 2);
+  addParamIfSelected('rolloff', 10, 2);
   
   // Add a short hash to ensure uniqueness (last 6 characters of the full hash)
   const shortHash = hashString(JSON.stringify(params)).toString(16).substring(0, 6);
@@ -3747,7 +3750,7 @@ function downloadSoundFromUI() {
     return;
   }
   
-  // Get parameters from the key
+  // Get parameters from the key - these already contain only selected parameters
   const params = soundLibrary[key];
   if (!params) {
     alert("Could not find parameters for this sound key.");
