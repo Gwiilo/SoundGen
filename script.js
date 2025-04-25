@@ -394,6 +394,21 @@ function loadSoundKey() {
         console.error("Error decoding new format key:", e);
         alert("Invalid sound key format. Cannot decode.");
       }
+    } else if (inputKey.startsWith('SK-')) {
+      // New compact format
+      try {
+        const params = decodeCompactKey(inputKey);
+        applyParametersToUI(params);
+        updateParameterVisibility(); // Add this to ensure parameters are visible
+        
+        // Store in library for future use
+        soundLibrary[inputKey] = params;
+        document.getElementById('soundKeyDisplay').textContent = inputKey;
+        document.getElementById('playStatus').textContent = "External sound key loaded!";
+      } catch (e) {
+        console.error("Error decoding compact key:", e);
+        alert("Invalid compact key format. Cannot decode.");
+      }
     } else {
       // Legacy hash-based key - try to reverse-engineer basic parameters
       reverseEngineerSoundKey(inputKey);
@@ -485,98 +500,313 @@ function generateSoundKey() {
   const legacyKey = hashString(paramString).toString(16);
   // 2. New format: Base64 encoded JSON (more universal)
   const newFormatKey = 'SND:' + btoa(paramString);
+  // 3. New compact format (much shorter)
+  const compactKey = generateCompactKey(params);
   
-  // We'll use the new format key for completeness
-  const keyToUse = newFormatKey;
+  // We'll use the compact format for display
+  const keyToUse = compactKey;
+  
+  // Store all formats in the library for compatibility
   soundLibrary[keyToUse] = params;
-  
-  // Also store the legacy key for backward compatibility
   soundLibrary[legacyKey] = params;
+  soundLibrary[newFormatKey] = params;
   
   document.getElementById("soundKeyDisplay").textContent = keyToUse;
-  document.getElementById('playStatus').textContent = "Sound key generated with ALL parameters! Click 'Play Sound' to hear it.";
+  document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
   
   // Also update the input field with the new key
   document.getElementById('soundKeyInput').value = keyToUse;
 }
 
-// Try to reverse-engineer parameters from a hash-based key
-function reverseEngineerSoundKey(key) {
-  // We can't perfectly reverse a hash, but we can make educated guesses
-  // based on key length and structure
+/**
+ * Generates a compact key from sound parameters
+ * @param {Object} params - The sound parameters
+ * @returns {string} A compact key
+ */
+function generateCompactKey(params) {
+  // Create a shorter representation of parameters
+  const keyParts = [];
   
-  // Default parameters as fallback
-  const params = {
-    soundType: 'custom',
-    windSpeed: 40,
-    windGustiness: 0.5,
-    waveHeight: 60,
-    fireIntensity: 0.5,
-    crackleFrequency: 5,
-    refDistance: 5,
-    rolloff: 1
+  // Start with sound type (abbreviated)
+  const typeMap = {
+    'wind': 'w',
+    'ocean': 'o',
+    'leaves': 'l',
+    'fire': 'f',
+    'footsteps': 'fs',
+    'synthesizer': 'sy',
+    'percussion': 'p',
+    'noise': 'n',
+    'mechanical': 'm',
+    'formant': 'fm',
+    'custom': 'c'
   };
   
-  // Look at key length to guess the sound type
-  const keyLength = key.length;
+  keyParts.push(typeMap[params.soundType] || 'c');
   
-  if (keyLength >= 6 && keyLength <= 8) {
-    // Likely a wind sound
-    params.soundType = 'wind';
-  } else if (keyLength > 8 && keyLength <= 10) {
-    // Likely fire or ocean
-    const firstChar = parseInt(key.charAt(0), 16);
-    params.soundType = firstChar % 2 === 0 ? 'fire' : 'ocean';
-  } else {
-    // Try other types or default to custom
-    const firstTwoChars = parseInt(key.substring(0, 2), 16);
-    if (firstTwoChars % 3 === 0) params.soundType = 'leaves';
-    else if (firstTwoChars % 3 === 1) params.soundType = 'footsteps';
-    else params.soundType = 'custom';
-  }
+  // Add most important parameters based on sound type
+  // This approach maps the most important parameters for each sound type to
+  // a compact representation, using 2-3 digits for each parameter
   
-  // Extract intensity parameters from key segments
-  try {
-    // Use portions of the key to set parameter values
-    const segment1 = parseInt(key.substring(0, 2), 16) % 100; // 0-99
-    const segment2 = parseInt(key.substring(2, 4), 16) % 100;
-    const segment3 = parseInt(key.substring(4, 6), 16) % 10;
-    
-    // Normalize values to appropriate ranges
-    const normalizedValue1 = segment1 / 100; // 0-0.99
-    const normalizedValue2 = segment2 / 100;
-    
-    // Apply to appropriate parameters based on sound type
-    switch(params.soundType) {
-      case 'wind':
-        params.windSpeed = segment1;
-        params.windGustiness = normalizedValue2;
-        params.turbulence = (normalizedValue1 + normalizedValue2) / 2;
-        break;
-      case 'fire':
-        params.fireIntensity = normalizedValue1;
-        params.crackleFrequency = segment3;
-        params.crackleIntensity = normalizedValue2;
-        break;
-      case 'ocean':
-        params.waveHeight = segment1;
-        params.waveFrequency = normalizedValue1;
-        params.surfIntensity = normalizedValue2;
-        break;
-      // ...cases for other sound types...
+  const addParam = (param, multiplier = 100, digits = 2) => {
+    if (params[param] !== undefined) {
+      // Scale the parameter to an integer and format with leading zeros
+      const value = Math.round(params[param] * multiplier);
+      keyParts.push(value.toString().padStart(digits, '0'));
     }
-    
-    console.log("Reverse engineered parameters:", params);
-    applyParametersToUI(params);
-    
-    // Store in library for future use
-    soundLibrary[key] = params;
-    document.getElementById('soundKeyDisplay').textContent = key;
-    document.getElementById('playStatus').textContent = "External sound key reverse-engineered!";
-  } catch (e) {
-    console.error("Error reverse engineering key:", e);
-    alert("Could not fully decode this sound key. Applied best-guess parameters.");
+  };
+  
+  // Add type-specific parameters
+  switch (params.soundType) {
+    case 'wind':
+      addParam('windSpeed', 1, 2);
+      addParam('windGustiness');
+      addParam('turbulence');
+      break;
+      
+    case 'ocean':
+      addParam('waveHeight', 1, 2);
+      addParam('waveFrequency');
+      addParam('surfIntensity');
+      break;
+      
+    case 'leaves':
+      addParam('rustleIntensity');
+      addParam('leafDensity', 1, 2);
+      break;
+      
+    case 'fire':
+      addParam('fireIntensity');
+      addParam('crackleFrequency', 10, 2);
+      addParam('crackleIntensity');
+      break;
+      
+    case 'footsteps':
+      addParam('footstepVolume');
+      addParam('stepFrequency', 1, 3);
+      break;
+      
+    case 'synthesizer':
+      // For synth, we'll encode oscillator type as a letter
+      const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
+      keyParts.push(oscTypeMap[params.oscType] || 'i');
+      addParam('oscFrequency', 0.1, 3); // 0-2000Hz mapped to 0-200
+      addParam('harmonic1');
+      addParam('harmonic2');
+      break;
+      
+    case 'percussion':
+      addParam('impactSharpness');
+      addParam('bodyResonance');
+      addParam('decayLength');
+      break;
+      
+    case 'noise':
+      // For noise, encode color as a letter
+      const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
+      keyParts.push(colorMap[params.noiseColor] || 'w');
+      addParam('noiseDensity');
+      addParam('spectralTilt', 10, 2); // -12 to 12 mapped to -120 to 120
+      break;
+      
+    case 'mechanical':
+      addParam('rpm', 0.1, 3); // 0-1200 mapped to 0-120
+      addParam('friction');
+      addParam('mechanicalLooseness');
+      break;
+      
+    case 'formant':
+      addParam('formant1', 0.1, 2); // 200-800 mapped to 20-80
+      addParam('formant2', 0.01, 2); // 800-2400 mapped to 8-24
+      addParam('breathiness');
+      addParam('vibrato');
+      break;
+      
+    case 'custom':
+      // For custom, determine which parameters to include
+      // based on the available parameters
+      if (params.oscType) {
+        // Synth-like
+        const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
+        keyParts.push(oscTypeMap[params.oscType] || 'i');
+        addParam('oscFrequency', 0.1, 3);
+      } else if (params.impactSharpness) {
+        // Percussion-like
+        addParam('impactSharpness');
+        addParam('bodyResonance');
+      } else if (params.noiseColor) {
+        // Noise-like
+        const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
+        keyParts.push(colorMap[params.noiseColor] || 'w');
+        addParam('noiseDensity');
+      }
+      break;
   }
+  
+  // Always add spatial parameters
+  addParam('refDistance', 1, 2);
+  addParam('rolloff', 10, 2);
+  
+  // Add a short hash to ensure uniqueness (last 6 characters of the full hash)
+  const shortHash = hashString(JSON.stringify(params)).toString(16).substring(0, 6);
+  keyParts.push(shortHash);
+  
+  // Join all parts with a separator and return
+  return 'SK-' + keyParts.join('-');
+}
+
+/**
+ * Decodes a compact key into sound parameters
+ * @param {string} compactKey - The compact key to decode
+ * @returns {Object} The decoded sound parameters
+ */
+function decodeCompactKey(compactKey) {
+  // Skip the 'SK-' prefix
+  const parts = compactKey.substring(3).split('-');
+  
+  if (parts.length < 3) {
+    throw new Error("Invalid compact key format: too few parts");
+  }
+  
+  // Start with an empty params object
+  const params = {};
+  
+  // Decode sound type
+  const typeMap = {
+    'w': 'wind',
+    'o': 'ocean',
+    'l': 'leaves',
+    'f': 'fire',
+    'fs': 'footsteps',
+    'sy': 'synthesizer',
+    'p': 'percussion',
+    'n': 'noise',
+    'm': 'mechanical',
+    'fm': 'formant',
+    'c': 'custom'
+  };
+  
+  params.soundType = typeMap[parts[0]] || 'custom';
+  
+  let index = 1;
+  
+  // Helper function to decode parameters
+  const decodeParam = (param, multiplier = 100, digits = 2) => {
+    if (index < parts.length - 1) {
+      params[param] = parseInt(parts[index], 10) / multiplier;
+      index++;
+    }
+  };
+  
+  // Decode type-specific parameters
+  switch (params.soundType) {
+    case 'wind':
+      decodeParam('windSpeed', 1, 2);
+      decodeParam('windGustiness');
+      decodeParam('turbulence');
+      break;
+      
+    case 'ocean':
+      decodeParam('waveHeight', 1, 2);
+      decodeParam('waveFrequency');
+      decodeParam('surfIntensity');
+      break;
+      
+    case 'leaves':
+      decodeParam('rustleIntensity');
+      decodeParam('leafDensity', 1, 2);
+      break;
+      
+    case 'fire':
+      decodeParam('fireIntensity');
+      decodeParam('crackleFrequency', 10, 2);
+      decodeParam('crackleIntensity');
+      break;
+      
+    case 'footsteps':
+      decodeParam('footstepVolume');
+      decodeParam('stepFrequency', 1, 3);
+      break;
+      
+    case 'synthesizer':
+      // Decode oscillator type
+      if (index < parts.length - 1) {
+        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
+        params.oscType = oscTypeMap[parts[index]] || 'sine';
+        index++;
+      }
+      decodeParam('oscFrequency', 0.1, 3);
+      decodeParam('harmonic1');
+      decodeParam('harmonic2');
+      break;
+      
+    case 'percussion':
+      decodeParam('impactSharpness');
+      decodeParam('bodyResonance');
+      decodeParam('decayLength');
+      break;
+      
+    case 'noise':
+      // Decode noise color
+      if (index < parts.length - 1) {
+        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
+        params.noiseColor = colorMap[parts[index]] || 'white';
+        index++;
+      }
+      decodeParam('noiseDensity');
+      decodeParam('spectralTilt', 10, 2);
+      break;
+      
+    case 'mechanical':
+      decodeParam('rpm', 0.1, 3);
+      decodeParam('friction');
+      decodeParam('mechanicalLooseness');
+      break;
+      
+    case 'formant':
+      decodeParam('formant1', 0.1, 2);
+      decodeParam('formant2', 0.01, 2);
+      decodeParam('breathiness');
+      decodeParam('vibrato');
+      break;
+      
+    case 'custom':
+      // For custom, we need to guess what parameters to decode
+      // based on the available parts
+      const firstPart = parts[index];
+      
+      if (['i', 'q', 'w', 't', 'c'].includes(firstPart)) {
+        // Synth-like parameters
+        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
+        params.oscType = oscTypeMap[firstPart];
+        index++;
+        decodeParam('oscFrequency', 0.1, 3);
+      } else if (['w', 'p', 'b', 'l', 'v', 'g'].includes(firstPart)) {
+        // Noise-like parameters
+        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
+        params.noiseColor = colorMap[firstPart];
+        index++;
+        decodeParam('noiseDensity');
+      } else {
+        // Try percussion-like parameters
+        decodeParam('impactSharpness');
+        decodeParam('bodyResonance');
+      }
+      break;
+  }
+  
+  // Always decode spatial parameters
+  decodeParam('refDistance', 1, 2);
+  decodeParam('rolloff', 10, 2);
+  
+  // Add some reasonable defaults for parameters that might be missing
+  if (params.soundType === 'wind' && !params.windSpeed) params.windSpeed = 40;
+  if (params.soundType === 'ocean' && !params.waveHeight) params.waveHeight = 60;
+  if (params.soundType === 'fire' && !params.fireIntensity) params.fireIntensity = 0.5;
+  if (params.soundType === 'synthesizer' && !params.oscType) params.oscType = 'sine';
+  if (params.soundType === 'noise' && !params.noiseColor) params.noiseColor = 'white';
+  
+  return params;
 }
 
 ///////////////////////////
@@ -1207,7 +1437,10 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
 
   // Set buffer and looping
   positionalAudio.setBuffer(buffer);
-  if (["wind", "fire", "ocean", "noise", "mechanical"].includes(params.soundType)) {
+  
+  // Always loop sounds that are meant to be continuous
+  const continuousSounds = ["wind", "fire", "ocean", "noise", "mechanical"];
+  if (continuousSounds.includes(params.soundType) || options.duration > buffer.duration) {
     positionalAudio.setLoop(true);
   }
   
@@ -2779,7 +3012,7 @@ function downloadSoundFromUI() {
         } else if (params.fireIntensity !== undefined) {
           buffer = SoundGenerator.createFireBuffer(audioCtx, params);
         } else if (params.footstepVolume !== undefined) {
-          buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+          buffer = SoundGenerator.createFootstepsBuffer(audioCtx, duration);
         } else {
           buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
         }
@@ -2792,8 +3025,9 @@ function downloadSoundFromUI() {
       throw new Error("Could not create audio buffer");
     }
     
-    // Create a longer buffer if needed for continuous sounds
-    if (buffer.duration < duration && ["wind", "fire", "ocean", "noise", "mechanical"].includes(params.soundType)) {
+    // IMPROVED: Create a longer buffer if needed for ALL sound types
+    // This ensures the downloaded sound will have the full requested duration
+    if (buffer.duration < duration) {
       const newBuffer = audioCtx.createBuffer(
         buffer.numberOfChannels,
         audioCtx.sampleRate * duration,
@@ -2804,9 +3038,13 @@ function downloadSoundFromUI() {
       for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
         const newData = newBuffer.getChannelData(channel);
         const originalData = buffer.getChannelData(channel);
+        const originalLength = originalData.length;
         
+        if (originalLength === 0) continue;
+        
+        // Properly loop the original data to fill the new buffer
         for (let i = 0; i < newData.length; i++) {
-          newData[i] = originalData[i % originalData.length];
+          newData[i] = originalData[i % originalLength];
         }
       }
       
