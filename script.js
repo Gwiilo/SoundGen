@@ -2174,7 +2174,7 @@ function scheduleEnvelope(gainNode, audioCtx, duration, fadeInFraction, fadeOutF
  * @param {THREE.Vector3} position - Start position.
  * @param {Object} options - Additional options (e.g. velocity, duration, fadeIn, fadeOut).
  */
-function playSoundFromKey(soundKey, orientation, position, options = {}) {
+function playSoundFromKey(soundKey, orientation, position, options = {}, visualizationOptions = {}) {
   const params = soundLibrary[soundKey];
   if (!params) {
     console.error("Unknown sound key:", soundKey);
@@ -2257,6 +2257,23 @@ function playSoundFromKey(soundKey, orientation, position, options = {}) {
   
   // Create the positional audio object
   const positionalAudio = new THREE.PositionalAudio(audioListener);
+  
+  // Connect to analyzers if provided
+  if (visualizationOptions.mainAnalyser) {
+    positionalAudio.setOutput(visualizationOptions.mainAnalyser);
+    
+    // Create parameter-specific analysers
+    if (visualizationOptions.parameterAnalysers) {
+      // For now, we'll just split the main audio to all parameter analysers
+      // In a real-world scenario, you might want to create separate audio nodes per parameter
+      Object.values(visualizationOptions.parameterAnalysers).forEach(analyser => {
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = 1.0;
+        positionalAudio.getOutput().connect(gainNode);
+        gainNode.connect(analyser);
+      });
+    }
+  }
   
   // Apply spatial parameters
   positionalAudio.setRefDistance(params.refDistance || 5);
@@ -2510,10 +2527,37 @@ function playSoundFromUI() {
   };
   
   try {
-    currentlyPlaying = playSoundFromKey(key, orientation, position, options);
+    // Set up audio analysis for visualization
+    const audioCtx = audioListener.context;
+    
+    // Clear any existing analysers
+    parameterAnalysers = {};
+    
+    // Create parameter-specific analysers
+    selectedParameters.forEach(param => {
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.8;
+      parameterAnalysers[param] = analyser;
+    });
+    
+    // Ensure the main analyser is connected to the audio context destination
+    if (!mainAnalyser) {
+      initializeVisualization();
+    }
+    
+    // Modified to capture audio for visualization
+    currentlyPlaying = playSoundFromKey(key, orientation, position, options, {
+      mainAnalyser,
+      parameterAnalysers
+    });
+    
     document.getElementById('playStatus').textContent = `Playing ${duration} seconds of sound...`;
     
-    // Reset UI after playback completes - ensure timing matches the actual duration
+    // Start visualization
+    startVisualization();
+    
+    // Reset UI after playback completes
     setTimeout(() => {
       // Cancel any ongoing animation
       if (playbackAnimationId) {
@@ -2521,7 +2565,10 @@ function playSoundFromUI() {
         playbackAnimationId = null;
       }
       
-      // Reset button - ensure progress is at 100% before resetting
+      // Stop visualization
+      stopVisualization();
+      
+      // Ensure progress is at 100% before resetting
       playButton.style.setProperty('--progress-width', '100%');
       
       // Small delay to ensure the progress bar is seen at 100% before resetting
@@ -3273,6 +3320,9 @@ function updateParameterVisibility() {
     const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
     if (paramControl) {
       paramControl.style.display = 'block';
+      
+      // Create visualization canvas if it doesn't exist
+      createParamVisualization(param);
     }
   });
   
@@ -3980,3 +4030,288 @@ function downloadSoundFromUI() {
     audioCtx.close();
   }
 }
+
+// Global variables for audio visualization
+let mainAnalyser = null;
+let parameterAnalysers = {};
+let visualizationAnimationId = null;
+let visualizationActive = false;
+
+/**
+ * Initializes audio visualization components
+ */
+function initializeVisualization() {
+  // Create main analyser for combined output
+  const audioCtx = audioListener.context;
+  mainAnalyser = audioCtx.createAnalyser();
+  mainAnalyser.fftSize = 256;
+  mainAnalyser.smoothingTimeConstant = 0.7;
+
+  // Connect to audio output
+  const mainOutput = audioCtx.destination;
+  mainAnalyser.connect(mainOutput);
+  
+  // Reset parameter analysers
+  parameterAnalysers = {};
+}
+
+/**
+ * Creates a parameter-specific visualization
+ * @param {string} param - The parameter ID
+ * @param {string} color - The color for the visualization
+ */
+function createParamVisualization(param) {
+  const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
+  if (!paramControl) return;
+  
+  // Check if visualization already exists
+  if (paramControl.querySelector('.param-visualization')) return;
+  
+  // Create canvas for visualization
+  const canvas = document.createElement('canvas');
+  canvas.className = 'param-visualization';
+  canvas.width = paramControl.clientWidth;
+  canvas.height = 20;
+  canvas.dataset.param = param;
+  
+  // Find the category for this parameter
+  let categoryKey = null;
+  for (const category in allParameters) {
+    if (allParameters[category].params[param]) {
+      categoryKey = category;
+      break;
+    }
+  }
+  
+  // Set data attribute for styling
+  if (categoryKey && categoryColors[categoryKey]) {
+    canvas.dataset.category = categoryKey;
+    canvas.dataset.color = categoryColors[categoryKey];
+  }
+  
+  // Add to parameter control
+  paramControl.appendChild(canvas);
+}
+
+/**
+ * Updates visualizations for all parameters and the main output
+ */
+function updateVisualizations() {
+  if (!visualizationActive) return;
+  
+  // Update main visualization
+  const mainCanvas = document.getElementById('mainVisualization');
+  if (mainCanvas && mainAnalyser) {
+    drawVisualization(mainCanvas, mainAnalyser, 'rgba(39, 174, 96, 0.5)');
+  }
+  
+  // Update parameter visualizations
+  selectedParameters.forEach(param => {
+    const canvas = document.querySelector(`.param-visualization[data-param="${param}"]`);
+    const analyser = parameterAnalysers[param];
+    
+    if (canvas && analyser) {
+      // Get color from the category
+      let color = '#666';
+      const categoryKey = canvas.dataset.category;
+      if (categoryKey && categoryColors[categoryKey]) {
+        color = `hsla(${categoryColors[categoryKey]}, 85%, 45%, 0.7)`;
+      }
+      
+      drawVisualization(canvas, analyser, color);
+    }
+  });
+  
+  // Continue animation loop
+  visualizationAnimationId = requestAnimationFrame(updateVisualizations);
+}
+
+/**
+ * Draws the audio data visualization on a canvas
+ * @param {HTMLCanvasElement} canvas - The canvas to draw on
+ * @param {AnalyserNode} analyser - The audio analyser node
+ * @param {string} color - The color to use for drawing
+ */
+function drawVisualization(canvas, analyser, color) {
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  analyser.getByteTimeDomainData(dataArray);
+  
+  const canvasCtx = canvas.getContext('2d');
+  canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  canvasCtx.lineWidth = 2;
+  canvasCtx.strokeStyle = color;
+  canvasCtx.beginPath();
+  
+  const sliceWidth = canvas.width / bufferLength;
+  let x = 0;
+  
+  for (let i = 0; i < bufferLength; i++) {
+    const v = dataArray[i] / 128.0;
+    const y = (v * canvas.height) / 2;
+    
+    if (i === 0) {
+      canvasCtx.moveTo(x, y);
+    } else {
+      canvasCtx.lineTo(x, y);
+    }
+    
+    x += sliceWidth;
+  }
+  
+  canvasCtx.lineTo(canvas.width, canvas.height / 2);
+  canvasCtx.stroke();
+}
+
+/**
+ * Starts the audio visualization
+ */
+function startVisualization() {
+  if (visualizationActive) return;
+  visualizationActive = true;
+  
+  // Create visualizations for all parameters
+  selectedParameters.forEach(createParamVisualization);
+  
+  // Start animation loop
+  updateVisualizations();
+}
+
+/**
+ * Stops the audio visualization
+ */
+function stopVisualization() {
+  visualizationActive = false;
+  if (visualizationAnimationId) {
+    cancelAnimationFrame(visualizationAnimationId);
+    visualizationAnimationId = null;
+  }
+}
+
+// Initialize visualization on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // ...existing code...
+  
+  // Create main visualization canvas in the play button
+  const playButton = document.querySelector('.play-btn');
+  if (playButton) {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'mainVisualization';
+    canvas.className = 'btn-visualization';
+    playButton.appendChild(canvas);
+    
+    // Resize canvas to match button size
+    resizeVisualizations();
+  }
+  
+  // Initialize audio visualization
+  initializeVisualization();
+  
+  // Add window resize handler for responsive canvases
+  window.addEventListener('resize', resizeVisualizations);
+});
+
+/**
+ * Resize all visualization canvases to match their container sizes
+ */
+function resizeVisualizations() {
+  // Resize main visualization
+  const mainCanvas = document.getElementById('mainVisualization');
+  const playButton = document.querySelector('.play-btn');
+  
+  if (mainCanvas && playButton) {
+    mainCanvas.width = playButton.clientWidth;
+    mainCanvas.height = playButton.clientHeight;
+  }
+  
+  // Resize parameter visualizations
+  document.querySelectorAll('.param-visualization').forEach(canvas => {
+    const container = canvas.parentElement;
+    if (container) {
+      canvas.width = container.clientWidth;
+    }
+  });
+}
+
+// Add visibility observer to properly size canvases when they become visible
+document.addEventListener('DOMContentLoaded', function() {
+  // ...existing code...
+  
+  // Create an intersection observer to handle visualizations in collapsed sections
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // If a parameter control becomes visible, ensure its visualization is sized correctly
+        const paramControl = entry.target;
+        const canvas = paramControl.querySelector('.param-visualization');
+        if (canvas) {
+          canvas.width = paramControl.clientWidth;
+        }
+      }
+    });
+  });
+  
+  // Observe all parameter controls
+  document.querySelectorAll('.parameter-control').forEach(control => {
+    observer.observe(control);
+  });
+  
+  // When a collapsible section is toggled, resize visualizations inside it
+  document.querySelectorAll('.collapse-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function() {
+      setTimeout(resizeVisualizations, 300); // Wait for animation to complete
+    });
+  });
+});
+
+// Update parameter visibility to include visualization creation
+function updateParameterVisibility() {
+  // First hide all parameter inputs
+  document.querySelectorAll('.parameter-control').forEach(control => {
+    control.style.display = 'none';
+  });
+  
+  // Show only selected parameters
+  selectedParameters.forEach(param => {
+    const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
+    if (paramControl) {
+      paramControl.style.display = 'block';
+      
+      // Create visualization canvas if it doesn't exist
+      createParamVisualization(param);
+    }
+  });
+  
+  // Update section visibility
+  document.querySelectorAll('.sound-params').forEach(section => {
+    const sectionId = section.id;
+    const categoryKey = sectionId.replace('Params', '');
+    
+    // Check if any parameter in this section is selected
+    let hasVisibleParams = false;
+    const params = allParameters[categoryKey]?.params;
+    
+    if (params) {
+      Object.keys(params).some(param => {
+        if (selectedParameters.has(param)) {
+          hasVisibleParams = true;
+          return true;
+        }
+        return false;
+      });
+    }
+    
+    // Show section if it has visible parameters
+    if (hasVisibleParams) {
+      section.style.display = 'block';
+    } else if (section.style.display !== 'none') {
+      section.style.display = 'none';
+    }
+  });
+}
+
+// ...existing code...

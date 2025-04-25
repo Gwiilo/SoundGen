@@ -222,13 +222,13 @@ button {
   height: 100%;
   width: 0%; /* Will be animated from 0% to 100% */
   background: rgba(255, 255, 255, 0.25); /* Semi-transparent white overlay */
-  z-index: 0;
+  z-index: 1; /* Make sure the progress indicator is above the visualization */
   transition: width 0.1s linear; /* Changed to linear for more accurate timing */
 }
 
 .play-btn span {
   position: relative;
-  z-index: 1; /* Keep text above the progress indicator */
+  z-index: 2; /* Text should be above both the visualization and the progress bar */
 }
 
 .play-btn:hover {
@@ -391,16 +391,15 @@ button:disabled::before {
 .collapsible-content {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.3s ease;
-  max-height: 1000px; /* Arbitrary large value */
+  max-height: 2000px; /* Increased to accommodate visualizations */
   opacity: 1;
+  overflow-y: visible;
 }
 
 .collapsible-section.collapsed .collapsible-content {
   max-height: 0;
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  pointer-events: none;
+  overflow-y: hidden;
 }
 
 /* Responsive adjustments */
@@ -792,7 +791,8 @@ input[type="number"] {
 
 /* Parameter control container */
 .parameter-control {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
+  position: relative;
 }
 
 /* Hide spinners on number inputs */
@@ -925,4 +925,27 @@ option {
   font-weight: normal;
   padding: 5px;
   color: var(--text-primary);
+}
+
+/* Audio visualization styles */
+.param-visualization {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn-visualization {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  border-radius: inherit;
+  opacity: 0.7;
+  mix-blend-mode: overlay;
+  pointer-events: none;
 }
