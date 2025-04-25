@@ -1,0 +1,276 @@
+{
+  "categories": [
+    {
+      "name": "Natural",
+      "presets": [
+        {
+          "id": "gentle_wind",
+          "name": "Gentle Wind",
+          "description": "Light breeze through leaves",
+          "parameters": {
+            "windSpeed": 20,
+            "windGustiness": 0.3,
+            "turbulence": 0.2,
+            "refDistance": 5,
+            "rolloff": 1
+          }
+        },
+        {
+          "id": "storm_wind",
+          "name": "Storm Wind",
+          "description": "Powerful gusts with high turbulence",
+          "parameters": {
+            "windSpeed": 75,
+            "windGustiness": 0.8,
+            "turbulence": 0.9,
+            "groundMaterial": "rock",
+            "refDistance": 8,
+            "rolloff": 0.7
+          }
+        },
+        {
+          "id": "ocean_waves",
+          "name": "Ocean Waves",
+          "description": "Distant ocean waves breaking",
+          "parameters": {
+            "waveHeight": 60,
+            "waveFrequency": 0.4,
+            "surfIntensity": 0.7,
+            "oceanDepth": "medium",
+            "refDistance": 7,
+            "rolloff": 1.2
+          }
+        },
+        {
+          "id": "campfire",
+          "name": "Campfire",
+          "description": "Small crackling campfire",
+          "parameters": {
+            "fireIntensity": 0.4,
+            "crackleFrequency": 6,
+            "crackleIntensity": 0.7,
+            "flickerSpeed": 1.2,
+            "fuelType": "wood",
+            "flameTemp": "warm",
+            "refDistance": 3,
+            "rolloff": 1.8
+          }
+        },
+        {
+          "id": "forest_leaves",
+          "name": "Forest Leaves",
+          "description": "Leaves rustling in a forest",
+          "parameters": {
+            "rustleIntensity": 0.4,
+            "leafType": "oak",
+            "leafDensity": 65,
+            "refDistance": 4,
+            "rolloff": 1.2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mechanical",
+      "presets": [
+        {
+          "id": "idling_engine",
+          "name": "Idling Engine",
+          "description": "Car engine at idle",
+          "parameters": {
+            "rpm": 800,
+            "gearRatio": 0.3,
+            "friction": 0.3,
+            "metallic": 0.6,
+            "mechanicalLooseness": 0.2,
+            "mechanicalType": "engine",
+            "refDistance": 3,
+            "rolloff": 1.5
+          }
+        },
+        {
+          "id": "electric_motor",
+          "name": "Electric Motor",
+          "description": "Small electric motor whine",
+          "parameters": {
+            "rpm": 6000,
+            "gearRatio": 0.5,
+            "friction": 0.1,
+            "metallic": 0.4,
+            "mechanicalLooseness": 0.1,
+            "mechanicalType": "motor",
+            "refDistance": 2,
+            "rolloff": 2.0
+          }
+        },
+        {
+          "id": "gear_mechanism",
+          "name": "Gear Mechanism",
+          "description": "Mechanical gears turning",
+          "parameters": {
+            "rpm": 300,
+            "gearRatio": 1.2,
+            "friction": 0.4,
+            "metallic": 0.8,
+            "mechanicalLooseness": 0.15,
+            "mechanicalType": "gears",
+            "refDistance": 2,
+            "rolloff": 2.5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Electronic",
+      "presets": [
+        {
+          "id": "bass_synth",
+          "name": "Bass Synth",
+          "description": "Deep synthesizer bass",
+          "parameters": {
+            "oscType": "sawtooth",
+            "oscFrequency": 80,
+            "oscDetune": 5,
+            "harmonic1": 0.7,
+            "harmonic2": 0.4,
+            "harmonic3": 0.2,
+            "noiseAmount": 0.05,
+            "lfoRate": 2,
+            "lfoDepth": 0.1,
+            "lfoTarget": "filter",
+            "filterType": "lowpass",
+            "filterCutoff": 500,
+            "filterResonance": 3,
+            "refDistance": 5,
+            "rolloff": 0.8
+          }
+        },
+        {
+          "id": "sci_fi_computer",
+          "name": "Sci-Fi Computer",
+          "description": "Futuristic computer beeps and processing",
+          "parameters": {
+            "oscType": "square",
+            "oscFrequency": 1200,
+            "oscDetune": 0,
+            "harmonic1": 0.2,
+            "noiseAmount": 0.1,
+            "lfoRate": 8,
+            "lfoDepth": 0.6,
+            "lfoTarget": "pitch",
+            "filterType": "bandpass",
+            "filterCutoff": 2000,
+            "filterResonance": 5,
+            "refDistance": 2,
+            "rolloff": 2.2
+          }
+        },
+        {
+          "id": "digital_noise",
+          "name": "Digital Noise",
+          "description": "Quantized digital interference",
+          "parameters": {
+            "noiseColor": "blue",
+            "noiseDensity": 0.75,
+            "lowFreqContent": 0.3,
+            "highFreqContent": 0.8,
+            "spectralTilt": 6,
+            "noiseQuantization": 4,
+            "refDistance": 3,
+            "rolloff": 1.5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organic",
+      "presets": [
+        {
+          "id": "drone_voice",
+          "name": "Drone Voice",
+          "description": "Sustained vocal drone",
+          "parameters": {
+            "formant1": 400,
+            "formant2": 1600,
+            "formant3": 2400,
+            "breathiness": 0.3,
+            "vocalTension": 0.4,
+            "vibrato": 0.15,
+            "vibratoRate": 5.5,
+            "vocalPreset": "o",
+            "refDistance": 4,
+            "rolloff": 1.2
+          }
+        },
+        {
+          "id": "wood_knock",
+          "name": "Wood Knock",
+          "description": "Wooden percussion hit",
+          "parameters": {
+            "impactSharpness": 0.9,
+            "bodyResonance": 0.4,
+            "decayLength": 0.2,
+            "pitchBend": 0.1,
+            "materialHardness": 0.6,
+            "materialDensity": 0.7,
+            "percussionType": "woodblock",
+            "refDistance": 3,
+            "rolloff": 2
+          }
+        },
+        {
+          "id": "metal_impact",
+          "name": "Metal Impact",
+          "description": "Metallic resonant impact",
+          "parameters": {
+            "impactSharpness": 0.85,
+            "bodyResonance": 0.8,
+            "decayLength": 0.7,
+            "pitchBend": 0.05,
+            "materialHardness": 0.9,
+            "materialDensity": 0.8,
+            "percussionType": "metal",
+            "refDistance": 5,
+            "rolloff": 1.5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ambient",
+      "presets": [
+        {
+          "id": "pink_atmosphere",
+          "name": "Pink Atmosphere",
+          "description": "Smooth pink noise ambience",
+          "parameters": {
+            "noiseColor": "pink",
+            "noiseDensity": 0.6,
+            "lowFreqContent": 0.7,
+            "highFreqContent": 0.3,
+            "spectralTilt": -5,
+            "refDistance": 10,
+            "rolloff": 0.5
+          }
+        },
+        {
+          "id": "dark_drone",
+          "name": "Dark Drone",
+          "description": "Low ominous drone",
+          "parameters": {
+            "oscType": "sine",
+            "oscFrequency": 65,
+            "harmonic1": 0.3,
+            "harmonic2": 0.1,
+            "noiseAmount": 0.2,
+            "lfoRate": 0.2,
+            "lfoDepth": 0.1,
+            "lfoTarget": "amplitude",
+            "refDistance": 8,
+            "rolloff": 0.7
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -261,6 +261,47 @@ button:disabled::before {
   border-color: var(--accent-blue-light);
 }
 
+/* Play and Download button group */
+.play-download-group {
+  display: flex;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.play-btn {
+  flex: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin: 0;
+}
+
+.download-btn {
+  width: 30px;
+  background: var(--accent-green);
+  color: white;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.download-btn:hover {
+  background: #27ae60;
+}
+
+@media (max-width: 600px) {
+  .play-download-group {
+    flex-direction: row;
+    margin: 5px 0;
+  }
+}
+
 /* Key input styling */
 .key-input {
   margin-bottom: 15px;
@@ -677,12 +718,6 @@ input[type="number"] {
   gap: 15px;
 }
 
-.param-category {
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px;
-}
-
 .param-category-header {
   display: flex;
   align-items: center;
@@ -815,4 +850,79 @@ input[type="checkbox"]:indeterminate::before {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/* Preset Selector Styles */
+.preset-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.preset-categories,
+.preset-items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.preset-description {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-top: 5px;
+  min-height: 1.8em;
+  padding: 5px;
+  border-left: 3px solid var(--accent-blue);
+  background: var(--field-bg);
+}
+
+.preset-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.preset-actions .secondary-btn {
+  margin: 0;
+  flex: 1;
+}
+
+/* Preset Save Form */
+.preset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group textarea {
+  height: 80px;
+  resize: vertical;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+/* Styling for optgroups in select */
+optgroup {
+  font-weight: bold;
+  color: var(--accent-blue);
+  background-color: var(--bg-tertiary);
+}
+
+option {
+  font-weight: normal;
+  padding: 5px;
+  color: var(--text-primary);
 }

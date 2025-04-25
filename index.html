@@ -20,26 +20,34 @@
           </div>
         </div>
         
-        <!-- Sound Type Selector -->
+        <!-- Replace Sound Type Selector with Preset Selector -->
         <form id="soundForm">
           <fieldset>
-            <legend>Sound Type</legend>
-            <label for="soundType">Select Sound Type:</label>
-            <select id="soundType" name="soundType">
-              <option value="wind">Wind Blowing</option>
-              <option value="ocean">Ocean Waves</option>
-              <option value="leaves">Tree Leaves Rustling</option>
-              <option value="fire">Ambient Fire Burning</option>
-              <option value="footsteps">Footsteps on Surface</option>
-              <option value="synthesizer">Synthesizer</option>
-              <option value="percussion">Percussion</option>
-              <option value="noise">Advanced Noise</option>
-              <option value="mechanical">Mechanical Sounds</option>
-              <option value="formant">Voice & Formant</option>
-              <option value="custom">Custom Parameters</option>
-            </select>
+            <legend>Sound Preset</legend>
             
-            <!-- Parameter Selection UI -->
+            <div class="preset-selector">
+              <div class="preset-categories">
+                <label for="presetCategory">Category:</label>
+                <select id="presetCategory" name="presetCategory">
+                  <option value="all">All Presets</option>
+                  <!-- Categories will be loaded from presets.json -->
+                </select>
+              </div>
+              
+              <div class="preset-items">
+                <label for="presetSelector">Preset:</label>
+                <select id="presetSelector" name="presetSelector">
+                  <option value="custom">Custom Parameters</option>
+                  <!-- Presets will be loaded from presets.json -->
+                </select>
+              </div>
+              
+              <div class="preset-info">
+                <div id="presetDescription" class="preset-description"></div>
+              </div>
+            </div>
+            
+            <!-- Parameter Selection UI remains unchanged -->
             <div class="parameter-selection">
               <label>Active Parameters:</label>
               <div class="parameter-tags" id="selectedParameters">
@@ -48,10 +56,13 @@
               <button type="button" id="addParameterBtn" class="add-param-btn">+</button>
             </div>
             
-            <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
+            <div class="preset-actions">
+              <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
+              <button type="button" id="savePresetBtn" class="secondary-btn" onclick="showSavePresetModal()">Save Current as Preset</button>
+            </div>
           </fieldset>
 
-          <!-- Sound Parameters Container -->
+          <!-- Sound Parameters Container remains unchanged -->
           <div id="parametersContainer">
             <!-- WIND Specific Parameters - now with collapsed class -->
             <fieldset id="windParams" class="sound-params collapsible-section collapsed">
@@ -509,7 +520,10 @@
       <div class="panel-footer">
         <div class="action-buttons">
           <button type="button" class="primary-btn" onclick="generateSoundKey()">Generate Sound Key</button>
-          <button type="button" class="play-btn" onclick="playSoundFromUI()"><span>Play Sound</span></button>
+          <div class="play-download-group">
+            <button type="button" class="play-btn" onclick="playSoundFromUI()"><span>Play Sound</span></button>
+            <button type="button" class="download-btn" onclick="downloadSoundFromUI()" title="Download Sound">↓</button>
+          </div>
         </div>
 
         <div id="output-container">

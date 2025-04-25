@@ -2,34 +2,6 @@
 // UI Behavior: Show/hide fieldsets and handle parameters
 ///////////////////////////
 document.addEventListener('DOMContentLoaded', function() {
-  // Show/hide correct parameter panels when sound type changes
-  document.getElementById('soundType').addEventListener('change', function() {
-    const type = this.value;
-    const paramPanels = document.querySelectorAll('.sound-params');
-    
-    // Hide all parameter panels first
-    paramPanels.forEach(panel => {
-      panel.style.display = 'none';
-    });
-    
-    // Show the selected one
-    if (type === 'custom') {
-      // For custom, show all parameters
-      paramPanels.forEach(panel => {
-        panel.style.display = 'block';
-      });
-    } else {
-      // For specific presets, show only the relevant panel
-      const selectedPanel = document.getElementById(`${type}Params`);
-      if (selectedPanel) {
-        selectedPanel.style.display = 'block';
-      }
-      
-      // Apply preset values
-      applyPresetValues(type);
-    }
-  });
-  
   // Initialize parameter value displays for all sliders
   document.querySelectorAll('.slider').forEach(slider => {
     const id = slider.id;
@@ -55,18 +27,132 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Add event listener for sound type changes
-  document.getElementById('soundType').addEventListener('change', function() {
-    updateSelectedParametersForType(this.value);
-  });
-  
   // Add event listener for the add parameter button
-  document.getElementById('addParameterBtn').addEventListener('click', showParameterModal);
+  const addParamBtn = document.getElementById('addParameterBtn');
+  if (addParamBtn) {
+    addParamBtn.addEventListener('click', showParameterModal);
+  }
   
-  // Initialize with default parameters for current sound type
-  const initialSoundType = document.getElementById('soundType').value;
-  updateSelectedParametersForType(initialSoundType);
+  // Initialize with default parameters
+  initializeDefaultParameters();
+  
+  // Add event listeners for preset selectors if they exist
+  const presetCategory = document.getElementById('presetCategory');
+  const presetSelector = document.getElementById('presetSelector');
+  
+  if (presetCategory) {
+    presetCategory.addEventListener('change', updatePresetOptions);
+  }
+  
+  if (presetSelector) {
+    presetSelector.addEventListener('change', loadSelectedPreset);
+  }
+  
+  // Wrap parameter labels and controls for better visibility
+  wrapParameterControls();
+  
+  // Load presets data - handle the CORS issue with a fallback
+  setupDefaultPresets(); // Always use default presets for local development
+  
+  // Set initial duration display
+  const durationSlider = document.getElementById('playbackDuration');
+  if (durationSlider) {
+    updateDurationDisplay(durationSlider.value);
+  }
+
+  // Handle backward compatibility - create a hidden soundType element if not present
+  if (!document.getElementById('soundType')) {
+    const hiddenSoundType = document.createElement('input');
+    hiddenSoundType.type = 'hidden';
+    hiddenSoundType.id = 'soundType';
+    hiddenSoundType.value = 'custom';
+    document.body.appendChild(hiddenSoundType);
+  }
 });
+
+/**
+ * Sets up default presets when fetch fails
+ */
+function setupDefaultPresets() {
+  console.log("Using default preset data");
+  // Define basic preset data inline to avoid CORS issues
+  soundPresets = {
+    categories: [
+      {
+        name: "Natural",
+        presets: [
+          {
+            id: "gentle_wind",
+            name: "Gentle Wind",
+            description: "Light breeze through leaves",
+            parameters: {
+              windSpeed: 20,
+              windGustiness: 0.3,
+              turbulence: 0.2,
+              refDistance: 5,
+              rolloff: 1
+            }
+          },
+          {
+            id: "ocean_waves",
+            name: "Ocean Waves",
+            description: "Distant ocean waves breaking",
+            parameters: {
+              waveHeight: 60,
+              waveFrequency: 0.4,
+              surfIntensity: 0.7,
+              oceanDepth: "medium",
+              refDistance: 7,
+              rolloff: 1.2
+            }
+          }
+        ]
+      },
+      {
+        name: "Electronic",
+        presets: [
+          {
+            id: "bass_synth",
+            name: "Bass Synth",
+            description: "Deep synthesizer bass",
+            parameters: {
+              oscType: "sawtooth",
+              oscFrequency: 80,
+              harmonic1: 0.7,
+              harmonic2: 0.4,
+              noiseAmount: 0.05,
+              filterType: "lowpass",
+              filterCutoff: 500,
+              refDistance: 5
+            }
+          }
+        ]
+      },
+      {
+        name: "Mechanical",
+        presets: [
+          {
+            id: "idling_engine",
+            name: "Idling Engine",
+            description: "Car engine at idle",
+            parameters: {
+              rpm: 800,
+              gearRatio: 0.3,
+              friction: 0.3,
+              metallic: 0.6,
+              mechanicalLooseness: 0.2,
+              mechanicalType: "engine",
+              refDistance: 3,
+              rolloff: 1.5
+            }
+          }
+        ]
+      }
+    ]
+  };
+  
+  populatePresetSelectors();
+}
 
 /**
  * Toggles the collapsed state of a section
@@ -89,18 +175,12 @@ function updateCollapsedState(section, collapsed) {
   
   if (collapsed) {
     // Collapse the section
-    content.style.maxHeight = '0';
-    content.style.opacity = '0';
-    content.style.paddingTop = '0';
-    content.style.paddingBottom = '0';
-    content.style.pointerEvents = 'none';
+    // Set maxHeight to 0 - this is crucial for the animation to work
+    content.style.maxHeight = '0px';
   } else {
     // Expand the section
-    content.style.maxHeight = '1000px';
-    content.style.opacity = '1';
-    content.style.paddingTop = '';
-    content.style.paddingBottom = '';
-    content.style.pointerEvents = '';
+    // Set maxHeight to the actual scroll height to ensure full visibility
+    content.style.maxHeight = content.scrollHeight + 'px';
   }
 }
 
@@ -275,7 +355,7 @@ function getCachedNoiseBuffer(audioCtx, key, duration) {
 // Map generated sound keys to parameter objects.
 const soundLibrary = {};
 
-// Load a sound from key
+// Fix loadSoundKey function to ensure all parameters are properly displayed
 function loadSoundKey() {
   const inputKey = document.getElementById('soundKeyInput').value.trim();
   
@@ -287,6 +367,7 @@ function loadSoundKey() {
   // First try to load from library for backward compatibility
   if (soundLibrary[inputKey]) {
     applyParametersToUI(soundLibrary[inputKey]);
+    updateParameterVisibility(); // Add this to ensure parameters are visible
     document.getElementById('soundKeyDisplay').textContent = inputKey;
     document.getElementById('playStatus').textContent = "Sound key loaded! Click 'Play Sound' to hear it.";
     return;
@@ -303,6 +384,7 @@ function loadSoundKey() {
         const jsonString = atob(inputKey.substring(4));
         const params = JSON.parse(jsonString);
         applyParametersToUI(params);
+        updateParameterVisibility(); // Add this to ensure parameters are visible
         
         // Store in library for future use
         soundLibrary[inputKey] = params;
@@ -315,6 +397,7 @@ function loadSoundKey() {
     } else {
       // Legacy hash-based key - try to reverse-engineer basic parameters
       reverseEngineerSoundKey(inputKey);
+      updateParameterVisibility(); // Also update visibility here
     }
   } catch (error) {
     console.error("Failed to load sound key:", error);
@@ -373,21 +456,23 @@ function applyParametersToUI(params) {
 }
 
 // Handle generating universal sound keys (for backward compatibility)
+/**
+ * Generates a universal sound key that captures ALL parameters 
+ */
 function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
 
-  // Only gather parameters that are selected
+  // Capture ALL parameters, not just the selected ones
   for (const category in allParameters) {
     for (const param in allParameters[category].params) {
-      if (selectedParameters.has(param)) {
-        const element = document.getElementById(param);
-        if (element) {
-          if (element.type === "number" || element.tagName === "SELECT" || 
-              element.classList.contains('slider')) {
-            params[param] = element.type === "number" || element.classList.contains('slider') ? 
-                            parseFloat(element.value) : element.value;
-          }
+      const element = document.getElementById(param);
+      if (element) {
+        if (element.type === "number" || element.tagName === "SELECT" || 
+            element.classList.contains('slider')) {
+          // Convert to appropriate type (number or string)
+          params[param] = element.type === "number" || element.classList.contains('slider') ? 
+                          parseFloat(element.value) : element.value;
         }
       }
     }
@@ -401,15 +486,15 @@ function generateSoundKey() {
   // 2. New format: Base64 encoded JSON (more universal)
   const newFormatKey = 'SND:' + btoa(paramString);
   
-  // We'll use the legacy key for now, but store both formats
-  const keyToUse = legacyKey;
+  // We'll use the new format key for completeness
+  const keyToUse = newFormatKey;
   soundLibrary[keyToUse] = params;
   
-  // Also make the new format key accessible
-  soundLibrary[newFormatKey] = params;
+  // Also store the legacy key for backward compatibility
+  soundLibrary[legacyKey] = params;
   
   document.getElementById("soundKeyDisplay").textContent = keyToUse;
-  document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
+  document.getElementById('playStatus').textContent = "Sound key generated with ALL parameters! Click 'Play Sound' to hear it.";
   
   // Also update the input field with the new key
   document.getElementById('soundKeyInput').value = keyToUse;
@@ -1283,7 +1368,10 @@ animate();
 // Play Sound via UI Button
 ///////////////////////////
 function updateDurationDisplay(value) {
-  document.getElementById('durationValue').textContent = value;
+  const durationValue = document.getElementById('durationValue');
+  if (durationValue) {  // Add null check here
+    durationValue.textContent = value;
+  }
 }
 
 // Track active sounds and animation
@@ -2211,4 +2299,591 @@ function wrapParameterControls() {
       }
     });
   });
+}
+
+// Global variable to store loaded presets
+let soundPresets = {
+  categories: []
+};
+
+/**
+ * Populates the preset category and preset selector dropdowns
+ */
+function populatePresetSelectors() {
+  const categorySelect = document.getElementById('presetCategory');
+  if (!categorySelect) return; // Exit if element doesn't exist
+  
+  // Clear existing options except the "All" option
+  while (categorySelect.options.length > 1) {
+    categorySelect.remove(1);
+  }
+  
+  // Add categories from presets
+  soundPresets.categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category.name;
+    option.textContent = category.name;
+    categorySelect.appendChild(option);
+  });
+  
+  // Trigger update of preset options
+  updatePresetOptions();
+}
+
+/**
+ * Updates the preset options based on the selected category
+ */
+function updatePresetOptions() {
+  const categorySelect = document.getElementById('presetCategory');
+  const presetSelect = document.getElementById('presetSelector');
+  
+  if (!categorySelect || !presetSelect) return; // Exit if elements don't exist
+  
+  const selectedCategory = categorySelect.value;
+  
+  // Clear existing options except the "Custom" option
+  while (presetSelect.options.length > 1) {
+    presetSelect.remove(1);
+  }
+  
+  // Add relevant presets
+  if (selectedCategory === 'all') {
+    // Add all presets from all categories
+    soundPresets.categories.forEach(category => {
+      // Add category group
+      const group = document.createElement('optgroup');
+      group.label = category.name;
+      
+      // Add presets for this category
+      category.presets.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.name;
+        group.appendChild(option);
+      });
+      
+      presetSelect.appendChild(group);
+    });
+  } else {
+    // Add presets for the selected category
+    const category = soundPresets.categories.find(cat => cat.name === selectedCategory);
+    if (category) {
+      category.presets.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.name;
+        presetSelect.appendChild(option);
+      });
+    }
+  }
+  
+  // Reset to custom if no preset is selected
+  if (presetSelect.options.length <= 1) {
+    presetSelect.value = 'custom';
+  }
+  
+  // Update description and load preset if needed
+  loadSelectedPreset();
+}
+
+/**
+ * Loads the selected preset
+ */
+function loadSelectedPreset() {
+  const presetSelect = document.getElementById('presetSelector');
+  const descriptionElement = document.getElementById('presetDescription');
+  
+  // Add null checks to avoid errors
+  if (!presetSelect || !descriptionElement) {
+    console.warn("Preset elements not found in the DOM");
+    return;
+  }
+  
+  const selectedPreset = presetSelect.value;
+  
+  // Clear description
+  descriptionElement.textContent = '';
+  
+  // If custom selected, do nothing
+  if (selectedPreset === 'custom') {
+    return;
+  }
+  
+  // Find the selected preset
+  let preset = null;
+  for (const category of soundPresets.categories) {
+    const foundPreset = category.presets.find(p => p.id === selectedPreset);
+    if (foundPreset) {
+      preset = foundPreset;
+      break;
+    }
+  }
+  
+  // If preset found, load it
+  if (preset) {
+    // Display description
+    descriptionElement.textContent = preset.description;
+    
+    // Apply parameters
+    const params = preset.parameters;
+    
+    // Update selected parameters
+    selectedParameters.clear();
+    for (const param in params) {
+      selectedParameters.add(param);
+    }
+    
+    // Apply parameter values to UI
+    for (const param in params) {
+      const element = document.getElementById(param);
+      if (element) {
+        element.value = params[param];
+        
+        // Update slider displays if applicable
+        if (element.classList.contains('slider')) {
+          updateParamOutput(param);
+        }
+      }
+    }
+    
+    // Update parameter tags and visibility
+    updateParameterTags();
+    updateParameterVisibility();
+    
+    const playStatus = document.getElementById('playStatus');
+    if (playStatus) {
+      playStatus.textContent = `Preset "${preset.name}" loaded!`;
+    }
+  }
+}
+
+/**
+ * Shows the save preset modal
+ */
+function showSavePresetModal() {
+  // Create modal elements
+  const overlay = document.createElement('div');
+  overlay.className = 'param-modal-overlay';
+  
+  const modal = document.createElement('div');
+  modal.className = 'param-modal';
+  
+  modal.innerHTML = `
+    <h3>Save Current as Preset</h3>
+    <div class="preset-form">
+      <div class="form-group">
+        <label for="newPresetName">Preset Name:</label>
+        <input type="text" id="newPresetName" placeholder="Enter a name for this preset">
+      </div>
+      
+      <div class="form-group">
+        <label for="newPresetCategory">Category:</label>
+        <select id="newPresetCategory">
+          ${soundPresets.categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
+          <option value="new">+ New Category</option>
+        </select>
+      </div>
+      
+      <div class="form-group" id="newCategoryGroup" style="display:none;">
+        <label for="newCategoryName">New Category Name:</label>
+        <input type="text" id="newCategoryName" placeholder="Enter new category name">
+      </div>
+      
+      <div class="form-group">
+        <label for="newPresetDescription">Description:</label>
+        <textarea id="newPresetDescription" placeholder="Brief description of this sound preset"></textarea>
+      </div>
+    </div>
+    <div class="param-modal-actions">
+      <button class="secondary-btn" id="cancelSavePreset">Cancel</button>
+      <button class="primary-btn" id="confirmSavePreset">Save Preset</button>
+    </div>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Show/hide new category input
+  const categorySelect = document.getElementById('newPresetCategory');
+  categorySelect.addEventListener('change', function() {
+    const newCategoryGroup = document.getElementById('newCategoryGroup');
+    newCategoryGroup.style.display = this.value === 'new' ? 'block' : 'none';
+  });
+  
+  // Add event handlers for modal buttons
+  document.getElementById('cancelSavePreset').addEventListener('click', function() {
+    document.body.removeChild(overlay);
+  });
+  
+  document.getElementById('confirmSavePreset').addEventListener('click', function() {
+    const presetName = document.getElementById('newPresetName').value.trim();
+    const categoryValue = document.getElementById('newPresetCategory').value;
+    const categoryName = categoryValue === 'new' ? 
+                         document.getElementById('newCategoryName').value.trim() : 
+                         categoryValue;
+    const description = document.getElementById('newPresetDescription').value.trim();
+    
+    if (!presetName) {
+      alert('Please enter a name for your preset.');
+      return;
+    }
+    
+    if (categoryValue === 'new' && !categoryName) {
+      alert('Please enter a name for the new category.');
+      return;
+    }
+    
+    // Create preset ID from name (slug format)
+    const presetId = presetName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    
+    // Gather current parameters
+    const params = {};
+    selectedParameters.forEach(param => {
+      const element = document.getElementById(param);
+      if (element) {
+        if (element.type === "number" || element.tagName === "SELECT" || 
+            element.classList.contains('slider')) {
+          params[param] = element.type === "number" || element.classList.contains('slider') ? 
+                          parseFloat(element.value) : element.value;
+        }
+      }
+    });
+    
+    // Create preset object
+    const newPreset = {
+      id: presetId,
+      name: presetName,
+      description: description,
+      parameters: params
+    };
+    
+    // Find or create category
+    let category = soundPresets.categories.find(c => c.name === categoryName);
+    if (!category) {
+      category = {
+        name: categoryName,
+        presets: []
+      };
+      soundPresets.categories.push(category);
+    }
+    
+    // Add preset to category
+    category.presets.push(newPreset);
+    
+    // Update UI
+    populatePresetSelectors();
+    
+    // Select the new preset
+    document.getElementById('presetCategory').value = categoryName;
+    updatePresetOptions();
+    document.getElementById('presetSelector').value = presetId;
+    loadSelectedPreset();
+    
+    // Show success message
+    document.getElementById('playStatus').textContent = `Preset "${presetName}" saved successfully!`;
+    
+    // Close modal
+    document.body.removeChild(overlay);
+    
+    // Offer to download updated presets JSON
+    setTimeout(() => {
+      if (confirm('Would you like to download the updated presets file?\n\nYou can save it as "presets.json" to permanently add this preset.')) {
+        downloadPresetsJson();
+      }
+    }, 500);
+  });
+}
+
+/**
+ * Downloads the current presets as a JSON file
+ */
+function downloadPresetsJson() {
+  const dataStr = JSON.stringify(soundPresets, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportFileDefaultName = 'presets.json';
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+}
+
+/**
+ * Initialize with default parameters instead of using soundType
+ */
+function initializeDefaultParameters() {
+  // Clear currently selected parameters
+  selectedParameters.clear();
+  
+  // Add basic spatial parameters
+  selectedParameters.add('refDistance');
+  selectedParameters.add('rolloff');
+  
+  // Add some default synthesizer parameters
+  selectedParameters.add('oscType');
+  selectedParameters.add('oscFrequency');
+  selectedParameters.add('harmonic1');
+  selectedParameters.add('noiseAmount');
+  
+  // Update the visual representation
+  updateParameterTags();
+  updateParameterVisibility();
+}
+
+// Replace the old updateSelectedParametersForType function since we're no longer using soundType
+function updateSelectedParametersForType(soundType) {
+  // This function is kept for backward compatibility
+  // But now it should do nothing or redirect to our preset system
+  console.log("Sound type selection is deprecated, using preset system instead");
+}
+
+// Helper function to create WAV from AudioBuffer
+function createWavFromAudioBuffer(audioBuffer) {
+  const numChannels = audioBuffer.numberOfChannels;
+  const length = audioBuffer.length * numChannels * 2; // 2 bytes per sample for 16-bit audio
+  const buffer = new ArrayBuffer(44 + length);
+  const view = new DataView(buffer);
+  
+  // RIFF identifier
+  writeString(view, 0, 'RIFF');
+  // RIFF chunk length
+  view.setUint32(4, 36 + length, true);
+  // RIFF type
+  writeString(view, 8, 'WAVE');
+  // Format chunk identifier
+  writeString(view, 12, 'fmt ');
+  // Format chunk length
+  view.setUint32(16, 16, true);
+  // Sample format (raw)
+  view.setUint16(20, 1, true);
+  // Channel count
+  view.setUint16(22, numChannels, true);
+  // Sample rate
+  view.setUint32(24, audioBuffer.sampleRate, true);
+  // Byte rate (sample rate * block align)
+  view.setUint32(28, audioBuffer.sampleRate * numChannels * 2, true);
+  // Block align (channel count * bytes per sample)
+  view.setUint16(32, numChannels * 2, true);
+  // Bits per sample
+  view.setUint16(34, 16, true);
+  // Data chunk identifier
+  writeString(view, 36, 'data');
+  // Data chunk length
+  view.setUint32(40, length, true);
+  
+  // Write the audio data
+  const channels = [];
+  for (let i = 0; i < numChannels; i++) {
+    channels.push(audioBuffer.getChannelData(i));
+  }
+  
+  let offset = 44;
+  for (let i = 0; i < audioBuffer.length; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      const sample = Math.max(-1, Math.min(1, channels[c][i]));
+      // Convert float sample to 16-bit PCM
+      const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, int16, true);
+      offset += 2;
+    }
+  }
+  
+  return buffer;
+}
+
+// Helper function to write strings to DataView
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+// Download sound function
+function downloadSoundFromUI() {
+  const key = document.getElementById("soundKeyDisplay").textContent;
+  if (!key) {
+    alert("Please generate a sound key first by clicking the 'Generate Sound Key' button.");
+    return;
+  }
+  
+  // Get parameters from the key
+  const params = soundLibrary[key];
+  if (!params) {
+    alert("Could not find parameters for this sound key.");
+    return;
+  }
+  
+  // Get duration from slider
+  const duration = parseInt(document.getElementById("playbackDuration").value);
+  
+  // Show user that download is being prepared
+  document.getElementById('playStatus').textContent = "Preparing sound download...";
+  
+  // Create an audio context
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  try {
+    // Create buffer based on sound type
+    let buffer;
+    
+    switch (params.soundType) {
+      case "wind":
+        buffer = SoundGenerator.createWindBuffer(audioCtx, params);
+        break;
+      case "ocean":
+        buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
+        break;
+      case "leaves":
+        buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
+        break;
+      case "fire":
+        buffer = SoundGenerator.createFireBuffer(audioCtx, params);
+        break;
+      case "footsteps":
+        buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+        break;
+      case "synthesizer":
+        buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+        break;
+      case "percussion":
+        buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+        break;
+      case "noise":
+        buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+        break;
+      case "mechanical":
+        buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+        break;
+      case "formant":
+        buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+        break;
+      case "custom":
+        // For custom, determine which buffer to use based on parameters
+        if (params.oscType !== undefined) {
+          buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+        } else if (params.impactSharpness !== undefined) {
+          buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+        } else if (params.noiseColor !== undefined) {
+          buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+        } else if (params.rpm !== undefined) {
+          buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+        } else if (params.formant1 !== undefined) {
+          buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+        } else if (params.windSpeed !== undefined) {
+          buffer = SoundGenerator.createWindBuffer(audioCtx, params);
+        } else if (params.waveHeight !== undefined) {
+          buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
+        } else if (params.rustleIntensity !== undefined) {
+          buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
+        } else if (params.fireIntensity !== undefined) {
+          buffer = SoundGenerator.createFireBuffer(audioCtx, params);
+        } else if (params.footstepVolume !== undefined) {
+          buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+        } else {
+          buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
+        }
+        break;
+      default:
+        buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
+    }
+    
+    if (!buffer) {
+      throw new Error("Could not create audio buffer");
+    }
+    
+    // Create a longer buffer if needed for continuous sounds
+    if (buffer.duration < duration && ["wind", "fire", "ocean", "noise", "mechanical"].includes(params.soundType)) {
+      const newBuffer = audioCtx.createBuffer(
+        buffer.numberOfChannels,
+        audioCtx.sampleRate * duration,
+        audioCtx.sampleRate
+      );
+      
+      // Loop the original buffer into the new one
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const newData = newBuffer.getChannelData(channel);
+        const originalData = buffer.getChannelData(channel);
+        
+        for (let i = 0; i < newData.length; i++) {
+          newData[i] = originalData[i % originalData.length];
+        }
+      }
+      
+      buffer = newBuffer;
+    }
+    
+    // Apply basic audio processing if needed
+    if (params.soundType === "wind" && params.windSpeed !== undefined) {
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = "bandpass";
+      let cutoff = 200 + (params.windSpeed / 100) * 1800;
+      filter.frequency.value = cutoff;
+      
+      const tempBuffer = audioCtx.createBuffer(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+      );
+      
+      // Process audio through filter and capture to new buffer
+      const offlineCtx = new OfflineAudioContext(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+      );
+      
+      const offlineSource = offlineCtx.createBufferSource();
+      offlineSource.buffer = buffer;
+      
+      const offlineFilter = offlineCtx.createBiquadFilter();
+      offlineFilter.type = "bandpass";
+      offlineFilter.frequency.value = cutoff;
+      
+      offlineSource.connect(offlineFilter);
+      offlineFilter.connect(offlineCtx.destination);
+      offlineSource.start();
+      
+      // Render and use the processed buffer
+      offlineCtx.startRendering().then(processedBuffer => {
+        buffer = processedBuffer;
+        finishDownload();
+      });
+    } else {
+      finishDownload();
+    }
+    
+    function finishDownload() {
+      // Convert the buffer to WAV format
+      const wavBuffer = createWavFromAudioBuffer(buffer);
+      
+      // Create a Blob and download link
+      const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a meaningful filename
+      const filename = `sound_${params.soundType || 'custom'}_${Math.floor(Date.now() / 1000)}.wav`;
+      
+      // Create and trigger a download link
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      audioCtx.close();
+      
+      document.getElementById('playStatus').textContent = "Sound downloaded successfully!";
+    }
+  } catch (error) {
+    console.error("Error generating sound for download:", error);
+    document.getElementById('playStatus').textContent = "Error generating sound for download.";
+    audioCtx.close();
+  }
 }
