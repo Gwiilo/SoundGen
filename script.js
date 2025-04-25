@@ -19,8 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  // Ensure the parameters are initially collapsed
+  // Ensure the parameters are initially collapsed but visible
   document.querySelectorAll('.collapsible-section').forEach(section => {
+    // Remove any inline display:none
+    section.style.display = 'block';
+    
     // Make sure the content is actually hidden on page load
     if (section.classList.contains('collapsed')) {
       updateCollapsedState(section, true);
@@ -68,6 +71,23 @@ document.addEventListener('DOMContentLoaded', function() {
     hiddenSoundType.value = 'custom';
     document.body.appendChild(hiddenSoundType);
   }
+  
+  // Add CSS override to fix collapsible sections
+  const styleOverride = document.createElement('style');
+  styleOverride.textContent = `
+    .collapsible-section {
+      display: block !important;
+    }
+    .collapsible-section.collapsed .collapsible-content {
+      max-height: 0 !important;
+      overflow: hidden;
+    }
+    .collapsible-section:not(.collapsed) .collapsible-content {
+      max-height: none !important;
+      overflow: visible;
+    }
+  `;
+  document.head.appendChild(styleOverride);
 });
 
 /**
@@ -173,14 +193,17 @@ function updateCollapsedState(section, collapsed) {
   const content = section.querySelector('.collapsible-content');
   if (!content) return;
   
+  // Remove any display:none that might be interfering
+  section.style.display = 'block';
+  
   if (collapsed) {
     // Collapse the section
-    // Set maxHeight to 0 - this is crucial for the animation to work
     content.style.maxHeight = '0px';
+    content.style.overflow = 'hidden'; // Ensure content is hidden
   } else {
     // Expand the section
-    // Set maxHeight to the actual scroll height to ensure full visibility
     content.style.maxHeight = content.scrollHeight + 'px';
+    content.style.overflow = 'visible'; // Make content visible
   }
 }
 
@@ -3894,9 +3917,8 @@ function downloadSoundFromUI() {
       const blob = new Blob([wavBuffer], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       
-      // Create a meaningful filename with sound key
-      const shortKey = key.replace(/^SK-/, '').split('-')[0];
-      const filename = `sound_${params.soundType}_${shortKey}_${duration}s.wav`;
+      // Create filename in the requested format: "noise [sound key].wav"
+      const filename = `noise ${key}.wav`;
       
       // Create and trigger a download link
       const downloadLink = document.createElement("a");
