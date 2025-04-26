@@ -627,3 +627,13 @@ const initializePresets = function() {
 
 // Initialize presets
 initializePresets();
+
+// Clean export interface
+export {
+  getNoiseFromKey,
+  getNoiseFromParams,
+  playNoise,
+  SoundGenerator,
+  generateSoundKey, 
+  decodeCompactKey
+};

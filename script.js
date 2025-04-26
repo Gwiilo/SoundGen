@@ -1,6 +1,22 @@
 // Import functions from noise.js
 import { getNoiseFromKey, getNoiseFromParams, playNoise } from './noise.js';
 
+// Import basics from Three.js
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js';
+
+// Initialize Firebase (add your own config)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "your-app.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-app.appspot.com",
+  messagingSenderId: "your-messaging-id",
+  appId: "your-app-id"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
 ///////////////////////////
 // UI Behavior: Show/hide fieldsets and handle parameters
 ///////////////////////////
@@ -559,7 +575,7 @@ function applyParametersToUI(params) {
 /**
  * Generates a universal sound key that captures ALL parameters 
  */
-function generateSoundKey() {
+async function generateSoundKey() {
   const soundType = document.getElementById('soundType').value;
   const params = { soundType };
 
@@ -581,28 +597,22 @@ function generateSoundKey() {
     }
   });
 
-  // Create the noise object
-  const noise = getNoiseFromParams(params);
-  
-  // Generate compact key (using the existing function)
-  const compactKey = generateCompactKey(params);
-  
-  // We'll use the compact format for display
-  const keyToUse = compactKey;
-  
-  // Store in our local library immediately
-  soundLibrary[keyToUse] = params;
-  
-  // Also store in the noise.js library for later use
-  import('./noise.js').then(module => {
-    module.addSoundToLibrary(keyToUse, params);
-  });
-  
-  document.getElementById("soundKeyDisplay").textContent = keyToUse;
-  document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
-  
-  // Also update the input field with the new key
-  document.getElementById('soundKeyInput').value = keyToUse;
+  try {
+    // Call Firebase function to generate key
+    const key = await callGenerateSoundKey(params);
+    
+    // Store in our local library immediately
+    soundLibrary[key] = params;
+    
+    document.getElementById("soundKeyDisplay").textContent = key;
+    document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
+    
+    // Also update the input field with the new key
+    document.getElementById('soundKeyInput').value = key;
+  } catch (error) {
+    document.getElementById('playStatus').textContent = "Error generating sound key.";
+    console.error("Failed to generate sound key:", error);
+  }
 }
 
 // Also update the compact key generation function to only include selected parameters
@@ -2556,7 +2566,7 @@ function updatePlaybackProgress() {
   }
 }
 
-function playSoundFromUI() {
+async function playSoundFromUI() {
   const key = document.getElementById("soundKeyDisplay").textContent;
   console.log("Attempting to play sound with key:", key);
   
@@ -2600,7 +2610,7 @@ function playSoundFromUI() {
   
   try {
     // Get noise from key using our new module
-    const noise = getNoiseFromKey(key);
+    const noise = await callGetNoiseFromKey(key);
     
     // Set up audio analysis for visualization
     const audioCtx = audioListener.context;
@@ -3644,16 +3654,6 @@ function showSavePresetModal() {
       <div class="form-group">
         <label for="newPresetCategory">Category:</label>
         <select id="newPresetCategory">
-          ${soundPresets.categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
-          <option value="new">+ New Category</option>
-        </select>
-      </div>
-      
-      <div class="form-group" id="newCategoryGroup" style="display:none;">
-        <label for="newCategoryName">New Category Name:</label>
-        <input type="text" id="newCategoryName" placeholder="Enter new category name">
-      </div>
-      
       <div class="form-group">
         <label for="newPresetDescription">Description:</label>
         <textarea id="newPresetDescription" placeholder="Brief description of this sound preset"></textarea>
