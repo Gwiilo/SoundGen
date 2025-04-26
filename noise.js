@@ -209,148 +209,134 @@ function decodeCompactKey(compactKey) {
  * @returns {string} Generated sound key
  */
 function generateSoundKey(params) {
-  // Skip the 'SK-' prefix
-  const parts = compactKey.substring(3).split('-');
+  // Create a shorter representation of parameters
+  const keyParts = [];
   
-  if (parts.length < 3) {
-    throw new Error("Invalid compact key format: too few parts");
-  }
-  
-  // Start with an empty params object
-  const params = {};
-  
-  // Decode sound type
+  // Start with sound type (abbreviated)
   const typeMap = {
-    'w': 'wind',
-    'o': 'ocean',
-    'l': 'leaves',
-    'f': 'fire',
-    'fs': 'footsteps',
-    'sy': 'synthesizer',
-    'p': 'percussion',
-    'n': 'noise',
-    'm': 'mechanical',
-    'fm': 'formant',
-    'c': 'custom'
+    'wind': 'w',
+    'ocean': 'o',
+    'leaves': 'l',
+    'fire': 'f',
+    'footsteps': 'fs',
+    'synthesizer': 'sy',
+    'percussion': 'p',
+    'noise': 'n',
+    'mechanical': 'm',
+    'formant': 'fm',
+    'custom': 'c'
   };
   
-  params.soundType = typeMap[parts[0]] || 'custom';
+  keyParts.push(typeMap[params.soundType] || 'c');
   
-  let index = 1;
-  
-  // Helper function to decode parameters
-  const decodeParam = (param, multiplier = 100, digits = 2) => {
-    if (index < parts.length - 1) {
-      params[param] = parseInt(parts[index], 10) / multiplier;
-      index++;
+  // Helper to check if parameter exists and add it if it does
+  const addParam = (param, multiplier = 100, digits = 2) => {
+    if (params[param] !== undefined) {
+      // Scale the parameter to an integer and format with leading zeros
+      const value = Math.round(params[param] * multiplier);
+      keyParts.push(value.toString().padStart(digits, '0'));
+      return true;
     }
+    return false;
   };
   
-  // Decode type-specific parameters
+  // Add type-specific parameters
   switch (params.soundType) {
     case 'wind':
-      decodeParam('windSpeed', 1, 2);
-      decodeParam('windGustiness');
-      decodeParam('turbulence');
+      addParam('windSpeed', 1, 2);
+      addParam('windGustiness');
+      addParam('turbulence');
       break;
       
     case 'ocean':
-      decodeParam('waveHeight', 1, 2);
-      decodeParam('waveFrequency');
-      decodeParam('surfIntensity');
+      addParam('waveHeight', 1, 2);
+      addParam('waveFrequency');
+      addParam('surfIntensity');
       break;
       
     case 'leaves':
-      decodeParam('rustleIntensity');
-      decodeParam('leafDensity', 1, 2);
+      addParam('rustleIntensity');
+      addParam('leafDensity', 1, 2);
       break;
       
     case 'fire':
-      decodeParam('fireIntensity');
-      decodeParam('crackleFrequency', 10, 2);
-      decodeParam('crackleIntensity');
+      addParam('fireIntensity');
+      addParam('crackleFrequency', 10, 2);
+      addParam('crackleIntensity');
       break;
       
     case 'footsteps':
-      decodeParam('footstepVolume');
-      decodeParam('stepFrequency', 1, 3);
+      addParam('footstepVolume');
+      addParam('stepFrequency', 1, 3);
       break;
       
     case 'synthesizer':
-      // Decode oscillator type
-      if (index < parts.length - 1) {
-        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
-        params.oscType = oscTypeMap[parts[index]] || 'sine';
-        index++;
+      // For synth, we'll encode oscillator type as a letter
+      if (params.oscType) {
+        const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
+        keyParts.push(oscTypeMap[params.oscType] || 'i');
       }
-      decodeParam('oscFrequency', 0.1, 3);
-      decodeParam('harmonic1');
-      decodeParam('harmonic2');
+      addParam('oscFrequency', 0.1, 3);
+      addParam('harmonic1');
+      addParam('harmonic2');
       break;
       
     case 'percussion':
-      decodeParam('impactSharpness');
-      decodeParam('bodyResonance');
-      decodeParam('decayLength');
+      addParam('impactSharpness');
+      addParam('bodyResonance');
+      addParam('decayLength');
       break;
       
     case 'noise':
-      // Decode noise color
-      if (index < parts.length - 1) {
-        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
-        params.noiseColor = colorMap[parts[index]] || 'white';
-        index++;
+      // For noise, encode color as a letter
+      if (params.noiseColor) {
+        const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
+        keyParts.push(colorMap[params.noiseColor] || 'w');
       }
-      decodeParam('noiseDensity');
-      decodeParam('spectralTilt', 10, 2);
+      addParam('noiseDensity');
+      addParam('spectralTilt', 10, 2);
       break;
       
     case 'mechanical':
-      decodeParam('rpm', 0.1, 3);
-      decodeParam('friction');
-      decodeParam('mechanicalLooseness');
+      addParam('rpm', 0.1, 3);
+      addParam('friction');
+      addParam('mechanicalLooseness');
       break;
       
     case 'formant':
-      decodeParam('formant1', 0.1, 2);
-      decodeParam('formant2', 0.01, 2);
-      decodeParam('breathiness');
-      decodeParam('vibrato');
+      addParam('formant1', 0.1, 2);
+      addParam('formant2', 0.01, 2);
+      addParam('breathiness');
+      addParam('vibrato');
       break;
       
     case 'custom':
-      // For custom, we need to guess what parameters to decode
-      // based on the available parts
-      const firstPart = parts[index];
-      
-      // Check if it's an oscillator type
-      if (['i', 'q', 'w', 't', 'c'].includes(firstPart)) {
-        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
-        params.oscType = oscTypeMap[firstPart];
-        index++;
-        decodeParam('oscFrequency', 0.1, 3);
-      } else if (['w', 'p', 'b', 'l', 'v', 'g'].includes(firstPart)) {
-        // Noise-like parameters
-        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
-        params.noiseColor = colorMap[firstPart];
-        index++;
-        decodeParam('noiseDensity');
+      // For custom, determine which parameters to include based on what's available
+      if (params.oscType) {
+        const oscTypeMap = {'sine': 'i', 'square': 'q', 'sawtooth': 'w', 'triangle': 't', 'custom': 'c'};
+        keyParts.push(oscTypeMap[params.oscType] || 'i');
+        addParam('oscFrequency', 0.1, 3);
+      } else if (params.impactSharpness) {
+        addParam('impactSharpness');
+        addParam('bodyResonance');
+      } else if (params.noiseColor) {
+        const colorMap = {'white': 'w', 'pink': 'p', 'brown': 'b', 'blue': 'l', 'violet': 'v', 'grey': 'g'};
+        keyParts.push(colorMap[params.noiseColor] || 'w');
+        addParam('noiseDensity');
       }
       break;
   }
   
-  // Always decode spatial parameters
-  decodeParam('refDistance', 1, 2);
-  decodeParam('rolloff', 10, 2);
+  // Add spatial parameters if they exist
+  addParam('refDistance', 1, 2);
+  addParam('rolloff', 10, 2);
   
-  // Add reasonable defaults for parameters that might be missing
-  if (params.soundType === 'wind' && !params.windSpeed) params.windSpeed = 40;
-  if (params.soundType === 'ocean' && !params.waveHeight) params.waveHeight = 60;
-  if (params.soundType === 'fire' && !params.fireIntensity) params.fireIntensity = 0.5;
-  if (params.soundType === 'synthesizer' && !params.oscType) params.oscType = 'sine';
-  if (params.soundType === 'noise' && !params.noiseColor) params.noiseColor = 'white';
+  // Add a short hash to ensure uniqueness (last 6 characters of the full hash)
+  const shortHash = hashString(JSON.stringify(params)).toString(16).substring(0, 6);
+  keyParts.push(shortHash);
   
-  return params;
+  // Join all parts with a separator and return
+  return 'SK-' + keyParts.join('-');
 }
 
 // The sound generator object
