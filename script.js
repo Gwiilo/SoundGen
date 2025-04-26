@@ -200,9 +200,11 @@ function updateCollapsedState(section, collapsed) {
     // Collapse the section
     content.style.maxHeight = '0px';
     content.style.overflow = 'hidden'; // Ensure content is hidden
+    // Force a reflow to ensure the browser applies the changes
+    void content.offsetWidth;
   } else {
     // Expand the section
-    content.style.maxHeight = content.scrollHeight + 'px';
+    content.style.maxHeight = '2000px'; // Use a large fixed value instead of scrollHeight
     content.style.overflow = 'visible'; // Make content visible
   }
 }
@@ -1917,11 +1919,8 @@ const SoundGenerator = {
             const splashPhase = t - splash.time;
             if (splashPhase > 0 && splashPhase < splash.decay * 3) {
               const splashEnv = Math.exp(-splashPhase / splash.decay);
-              const splashNoise = (Math.random() * 2 - 1) * 0.7;
-              const splashSin = Math.sin(2 * Math.PI * splash.frequency * splashPhase);
-              const splashSound = (splashNoise * 0.7 + splashSin * 0.3) * 
-                                 splashEnv * splash.amplitude * wetness;
-              sample += splashSound * 0.2;
+              const splashNoise = (Math.random() * 2 - 1) * splashEnv * splash.amplitude * wetness;
+              sample += splashNoise * 0.2;
             }
           }
         }
@@ -2258,23 +2257,6 @@ function playSoundFromKey(soundKey, orientation, position, options = {}, visuali
   // Create the positional audio object
   const positionalAudio = new THREE.PositionalAudio(audioListener);
   
-  // Connect to analyzers if provided
-  if (visualizationOptions.mainAnalyser) {
-    positionalAudio.setOutput(visualizationOptions.mainAnalyser);
-    
-    // Create parameter-specific analysers
-    if (visualizationOptions.parameterAnalysers) {
-      // For now, we'll just split the main audio to all parameter analysers
-      // In a real-world scenario, you might want to create separate audio nodes per parameter
-      Object.values(visualizationOptions.parameterAnalysers).forEach(analyser => {
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.value = 1.0;
-        positionalAudio.getOutput().connect(gainNode);
-        gainNode.connect(analyser);
-      });
-    }
-  }
-  
   // Apply spatial parameters
   positionalAudio.setRefDistance(params.refDistance || 5);
   positionalAudio.setRolloffFactor(params.rolloff || 1);
@@ -2285,13 +2267,44 @@ function playSoundFromKey(soundKey, orientation, position, options = {}, visuali
     params.coneOuterGain || 0.1
   );
 
-  // Set buffer and looping
+  // Set buffer but DON'T connect to destination yet if we have visualization
   positionalAudio.setBuffer(buffer);
   
-  // Always loop sounds that are meant to be continuous
-  const continuousSounds = ["wind", "fire", "ocean", "noise", "mechanical"];
-  if (continuousSounds.includes(params.soundType) || options.duration > buffer.duration) {
-    positionalAudio.setLoop(true);
+  // Connect to analyzers if provided
+  if (visualizationOptions.mainAnalyser) {
+    try {
+      // Get the AudioNode from the PositionalAudio object - FIXED using getOutput() instead of getSource()
+      const source = positionalAudio.getOutput();
+      
+      if (source) {
+        // Disconnect from the default destination - be careful not to disconnect too early
+        // Keep a reference to the destination
+        const destination = audioListener.context.destination;
+        
+        // Connect to main analyzer
+        source.connect(visualizationOptions.mainAnalyser);
+        
+        // Connect main analyzer to the destination
+        visualizationOptions.mainAnalyser.connect(destination);
+        
+        // Connect to parameter analyzers if needed
+        if (visualizationOptions.parameterAnalysers) {
+          Object.entries(visualizationOptions.parameterAnalysers).forEach(([param, analyser]) => {
+            const gainNode = audioListener.context.createGain();
+            gainNode.gain.value = 1.0;
+            source.connect(gainNode);
+            gainNode.connect(analyser);
+            analyser.connect(destination);
+          });
+        }
+        
+        console.log("Successfully connected audio to visualization");
+      } else {
+        console.warn("Audio output not available for visualization");
+      }
+    } catch (error) {
+      console.warn("Could not set up audio visualization:", error);
+    }
   }
   
   // Add to the 3D object
@@ -2533,11 +2546,11 @@ function playSoundFromUI() {
     // Clear any existing analysers
     parameterAnalysers = {};
     
-    // Create parameter-specific analysers
+    // Create parameter-specific analysers with better settings
     selectedParameters.forEach(param => {
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 128;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 256;  // Increased from 128
+      analyser.smoothingTimeConstant = 0.5;  // Less smoothing for more movement
       parameterAnalysers[param] = analyser;
     });
     
@@ -3278,6 +3291,24 @@ function showParameterModal() {
     
     updateParameterTags();
     updateParameterVisibility();
+    
+    // Fix: Force update of collapsible sections
+    document.querySelectorAll('.collapsible-section').forEach(section => {
+      // If the section has visible parameters, ensure it's displayed properly
+      if (section.querySelector('.parameter-control[style*="display: block"]')) {
+        section.style.display = 'block';
+        
+        // Ensure the collapse state is correct
+        if (!section.classList.contains('collapsed')) {
+          updateCollapsedState(section, false);
+        } else {
+          updateCollapsedState(section, true);
+        }
+      } else {
+        section.style.display = 'none';
+      }
+    });
+    
     document.body.removeChild(overlay);
   });
 }
@@ -3348,6 +3379,15 @@ function updateParameterVisibility() {
     // Show section if it has visible parameters
     if (hasVisibleParams) {
       section.style.display = 'block';
+      
+      // Ensure the content is visible if section is not collapsed
+      if (!section.classList.contains('collapsed')) {
+        const content = section.querySelector('.collapsible-content');
+        if (content) {
+          content.style.maxHeight = '2000px';
+          content.style.overflow = 'visible';
+        }
+      }
     } else if (section.style.display !== 'none') {
       section.style.display = 'none';
     }
@@ -4041,24 +4081,16 @@ let visualizationActive = false;
  * Initializes audio visualization components
  */
 function initializeVisualization() {
-  // Create main analyser for combined output
+  // Create main analyser for combined output with better settings
   const audioCtx = audioListener.context;
   mainAnalyser = audioCtx.createAnalyser();
-  mainAnalyser.fftSize = 256;
-  mainAnalyser.smoothingTimeConstant = 0.7;
-
-  // Connect to audio output
-  const mainOutput = audioCtx.destination;
-  mainAnalyser.connect(mainOutput);
-  
-  // Reset parameter analysers
-  parameterAnalysers = {};
+  mainAnalyser.fftSize = 512;  // Higher for better resolution
+  mainAnalyser.smoothingTimeConstant = 0.6;  // Less smoothing for more movement
 }
 
 /**
  * Creates a parameter-specific visualization
  * @param {string} param - The parameter ID
- * @param {string} color - The color for the visualization
  */
 function createParamVisualization(param) {
   const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
@@ -4066,13 +4098,6 @@ function createParamVisualization(param) {
   
   // Check if visualization already exists
   if (paramControl.querySelector('.param-visualization')) return;
-  
-  // Create canvas for visualization
-  const canvas = document.createElement('canvas');
-  canvas.className = 'param-visualization';
-  canvas.width = paramControl.clientWidth;
-  canvas.height = 20;
-  canvas.dataset.param = param;
   
   // Find the category for this parameter
   let categoryKey = null;
@@ -4083,6 +4108,18 @@ function createParamVisualization(param) {
     }
   }
   
+  // Create canvas for visualization with explicit styling
+  const canvas = document.createElement('canvas');
+  canvas.className = 'param-visualization';
+  canvas.height = 30;
+  canvas.width = paramControl.clientWidth || 300;
+  canvas.dataset.param = param;
+  canvas.style.display = 'block';  // Make sure it's visible
+  canvas.style.marginTop = '5px';
+  canvas.style.marginBottom = '10px';
+  canvas.style.border = '1px solid #ccc';
+  canvas.style.borderRadius = '4px';
+  
   // Set data attribute for styling
   if (categoryKey && categoryColors[categoryKey]) {
     canvas.dataset.category = categoryKey;
@@ -4091,6 +4128,27 @@ function createParamVisualization(param) {
   
   // Add to parameter control
   paramControl.appendChild(canvas);
+  
+  // Create analyzer for this parameter if needed
+  if (!parameterAnalysers[param] && audioListener) {
+    const audioCtx = audioListener.context;
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;  // Higher resolution
+    analyser.smoothingTimeConstant = 0.5;  // Less smoothing for more movement
+    parameterAnalysers[param] = analyser;
+  }
+  
+  // Initialize with a flat line visualization
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = categoryKey && categoryColors[categoryKey] ? 
+                      `hsl(${categoryColors[categoryKey]}, 85%, 45%)` : '#666';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height/2);
+  ctx.lineTo(canvas.width, canvas.height/2);
+  ctx.stroke();
 }
 
 /**
@@ -4133,9 +4191,13 @@ function updateVisualizations() {
  * @param {string} color - The color to use for drawing
  */
 function drawVisualization(canvas, analyser, color) {
+  if (!analyser) return;
+  
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
-  analyser.getByteTimeDomainData(dataArray);
+  
+  // Get audio data - we can use frequency data for more visible movement
+  analyser.getByteFrequencyData(dataArray);
   
   const canvasCtx = canvas.getContext('2d');
   canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4151,8 +4213,9 @@ function drawVisualization(canvas, analyser, color) {
   let x = 0;
   
   for (let i = 0; i < bufferLength; i++) {
-    const v = dataArray[i] / 128.0;
-    const y = (v * canvas.height) / 2;
+    // Normalize to use the full height of the canvas
+    const v = dataArray[i] / 256.0;
+    const y = canvas.height - (v * canvas.height);
     
     if (i === 0) {
       canvasCtx.moveTo(x, y);
@@ -4163,7 +4226,8 @@ function drawVisualization(canvas, analyser, color) {
     x += sliceWidth;
   }
   
-  canvasCtx.lineTo(canvas.width, canvas.height / 2);
+  // Add a baseline
+  canvasCtx.lineTo(canvas.width, canvas.height/2);
   canvasCtx.stroke();
 }
 
@@ -4177,8 +4241,26 @@ function startVisualization() {
   // Create visualizations for all parameters
   selectedParameters.forEach(createParamVisualization);
   
-  // Start animation loop
-  updateVisualizations();
+  // Make sure the main visualization canvas is visible
+  const mainCanvas = document.getElementById('mainVisualization');
+  if (mainCanvas) {
+    mainCanvas.style.display = 'block';
+    const playButton = document.querySelector('.play-btn');
+    if (playButton) {
+      mainCanvas.width = playButton.clientWidth || 200;
+      mainCanvas.height = playButton.clientHeight || 40;
+    }
+  }
+  
+  // Reset any existing animation
+  if (visualizationAnimationId) {
+    cancelAnimationFrame(visualizationAnimationId);
+  }
+  
+  // Start animation loop with a small delay to make sure audio is connected
+  setTimeout(() => {
+    updateVisualizations();
+  }, 100);
 }
 
 /**
@@ -4199,13 +4281,29 @@ document.addEventListener('DOMContentLoaded', function() {
   // Create main visualization canvas in the play button
   const playButton = document.querySelector('.play-btn');
   if (playButton) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'mainVisualization';
-    canvas.className = 'btn-visualization';
-    playButton.appendChild(canvas);
+    // Check if canvas already exists
+    let canvas = document.getElementById('mainVisualization');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'mainVisualization';
+      canvas.className = 'btn-visualization';
+      canvas.style.position = 'absolute'; 
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.pointerEvents = 'none'; // Don't interfere with button clicks
+      canvas.style.opacity = '0.7';
+      canvas.style.zIndex = '1';
+      playButton.style.position = 'relative'; // Ensure button can have absolute positioned children
+      playButton.insertBefore(canvas, playButton.firstChild);
+    }
     
     // Resize canvas to match button size
-    resizeVisualizations();
+    setTimeout(() => {
+      canvas.width = playButton.clientWidth || 200;
+      canvas.height = playButton.clientHeight || 40;
+    }, 100);
   }
   
   // Initialize audio visualization
@@ -4213,6 +4311,23 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Add window resize handler for responsive canvases
   window.addEventListener('resize', resizeVisualizations);
+  
+  // Add some CSS to ensure visualizations are visible
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    .param-visualization {
+      display: block !important;
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .btn-visualization {
+      display: block !important;
+    }
+  `;
+  document.head.appendChild(styleEl);
 });
 
 /**
@@ -4224,15 +4339,15 @@ function resizeVisualizations() {
   const playButton = document.querySelector('.play-btn');
   
   if (mainCanvas && playButton) {
-    mainCanvas.width = playButton.clientWidth;
-    mainCanvas.height = playButton.clientHeight;
+    mainCanvas.width = playButton.clientWidth || 200;
+    mainCanvas.height = playButton.clientHeight || 40;
   }
   
   // Resize parameter visualizations
   document.querySelectorAll('.param-visualization').forEach(canvas => {
     const container = canvas.parentElement;
     if (container) {
-      canvas.width = container.clientWidth;
+      canvas.width = container.clientWidth || 300;
     }
   });
 }
@@ -4308,6 +4423,15 @@ function updateParameterVisibility() {
     // Show section if it has visible parameters
     if (hasVisibleParams) {
       section.style.display = 'block';
+      
+      // Ensure the content is visible if section is not collapsed
+      if (!section.classList.contains('collapsed')) {
+        const content = section.querySelector('.collapsible-content');
+        if (content) {
+          content.style.maxHeight = '2000px';
+          content.style.overflow = 'visible';
+        }
+      }
     } else if (section.style.display !== 'none') {
       section.style.display = 'none';
     }
