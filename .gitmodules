@@ -1,0 +1,3 @@
+[submodule "soundgen"]
+	path = soundgen
+	url = https://github.com/Gwiilo/soundgen.git
