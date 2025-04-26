@@ -4,23 +4,39 @@ Procedural sound generation library.
 
 ## How to integrate with your project
 
-### Option 1: Git Submodule (recommended for active development)
+### Option 1: Git Submodule with Sparse Checkout (minimal files)
 
-Add SoundGen as a Git submodule:
+This approach lets you include only the essential files:
 
 ```bash
 # From your project root
 git submodule add https://github.com/Gwiilo/soundgen.git soundgen
-git submodule update --init --recursive
+cd soundgen
+
+# Set up sparse checkout to only get specific files
+git config core.sparseCheckout true
+echo "integration.js" > .git/info/sparse-checkout
+echo "noise.js" >> .git/info/sparse-checkout
+
+# Update to apply sparse checkout
+git read-tree -mu HEAD
+cd ..
 ```
 
-To update to the latest version later:
+This will give you only the integration.js and noise.js files in your submodule directory.
+
+### Option 2: Direct download of specific files
+
+If you prefer not to use Git submodules, you can directly download just the files you need:
 
 ```bash
-git submodule update --remote --merge
+# Using curl to get just the needed files
+mkdir -p soundgen
+curl -L https://raw.githubusercontent.com/Gwiilo/soundgen/main/integration.js -o soundgen/integration.js
+curl -L https://raw.githubusercontent.com/Gwiilo/soundgen/main/noise.js -o soundgen/noise.js
 ```
 
-### Option 2: Direct download
+### Option 3: Direct download
 
 If you prefer not to use Git submodules, you can directly download the files:
 
