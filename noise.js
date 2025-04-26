@@ -633,56 +633,103 @@ function getNoiseFromKey(soundKey) {
  * @returns {Object} Audio control object
  */
 function playNoise(noise, options = {}) {
-  const audioCtx = options.listener ? options.listener.context : new (window.AudioContext || window.webkitAudioContext)();
+  // Input validation from the second implementation
+  if (!noise) {
+    console.error("Missing noise object for playNoise");
+    return null;
+  }
+
+  // Handle positional vs non-positional mode
+  const isPositionalMode = options.position && options.listener && options.scene;
+  
+  // Create audio context
+  const audioCtx = isPositionalMode ? 
+    options.listener.context : 
+    new (window.AudioContext || window.webkitAudioContext)();
+  
+  // Position handling
+  const position = options.position || new THREE.Vector3(0, 0, 0);
+  
+  // Create sound buffer
   const buffer = noise.createBuffer(audioCtx);
-  
-  // Create audio nodes
-  const source = audioCtx.createBufferSource();
-  const gainNode = audioCtx.createGain();
-  
-  // Set buffer and connect
-  source.buffer = buffer;
-  source.connect(gainNode);
-  
-  // Handle duration and looping
-  const duration = options.duration || 3; // Default to 3 seconds if not specified
-  console.log("In playNoise: setting duration to", duration);
-  
-  // If buffer is shorter than desired duration, enable looping
-  if (buffer.duration < duration) {
-    source.loop = true;
+  if (!buffer) {
+    console.error("Failed to create audio buffer");
+    return null;
   }
   
-  // Schedule envelope for the specified duration
-  scheduleEnvelope(gainNode, audioCtx, duration, options.fadeIn, options.fadeOut);
+  // Duration and fade settings
+  const duration = options.duration || 3;
+  const fadeIn = options.fadeIn || 0.1;
+  const fadeOut = options.fadeOut || 0.2;
   
-  // Connect to destination or positional audio
-  if (options.position && options.listener && options.scene) {
-    // Create positional audio
-    const audioObj = new THREE.Object3D();
-    audioObj.position.copy(options.position);
-    options.scene.add(audioObj);
+  console.log("In playNoise: setting duration to", duration);
+  
+  if (isPositionalMode) {
+    // POSITIONAL AUDIO MODE
+    // Create a sound object
+    const soundObject = new THREE.Object3D();
+    soundObject.position.copy(position);
+    options.scene.add(soundObject);
     
+    // Create the positional audio
     const positionalAudio = new THREE.PositionalAudio(options.listener);
-    positionalAudio.setBuffer(buffer);
+    
+    // Apply spatial parameters
     positionalAudio.setRefDistance(noise.params.refDistance || 5);
     positionalAudio.setRolloffFactor(noise.params.rolloff || 1);
+    positionalAudio.setDistanceModel("exponential");
     
-    // Connect gain node to positional audio
-    gainNode.connect(positionalAudio.gain.gain);
+    // Add directional cone if available
+    if (noise.params.coneInner) {
+      positionalAudio.setDirectionalCone(
+        noise.params.coneInner, 
+        noise.params.coneOuter || 180, 
+        noise.params.coneOuterGain || 0.1
+      );
+    }
     
+    // Set buffer - enable looping if buffer is shorter than duration
+    positionalAudio.setBuffer(buffer);
+    if (buffer.duration < duration) {
+      positionalAudio.setLoop(true);
+    }
+    
+    // Add to sound object
+    soundObject.add(positionalAudio);
+    
+    // Schedule envelope
+    scheduleEnvelope(positionalAudio.gain, audioCtx, duration, fadeIn, fadeOut);
+    
+    // Start playback
     positionalAudio.play();
     
-    // Cleanup after duration
+    // Set timeout to clean up
     setTimeout(() => {
       if (positionalAudio.isPlaying) {
         positionalAudio.stop();
       }
-      options.scene.remove(audioObj);
+      options.scene.remove(soundObject);
     }, duration * 1000);
     
     return positionalAudio;
   } else {
+    // NON-POSITIONAL AUDIO MODE
+    // Create audio nodes
+    const source = audioCtx.createBufferSource();
+    const gainNode = audioCtx.createGain();
+    
+    // Set buffer and connect
+    source.buffer = buffer;
+    source.connect(gainNode);
+    
+    // If buffer is shorter than desired duration, enable looping
+    if (buffer.duration < duration) {
+      source.loop = true;
+    }
+    
+    // Schedule envelope for the specified duration
+    scheduleEnvelope(gainNode, audioCtx, duration, fadeIn, fadeOut);
+    
     // Connect to regular destination
     gainNode.connect(audioCtx.destination);
     source.start(0);
