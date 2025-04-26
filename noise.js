@@ -204,8 +204,156 @@ function decodeCompactKey(compactKey) {
 }
 
 /**
- * The sound generator object containing methods for creating different sound buffers
+ * Generates a sound key from parameters
+ * @param {Object} params - Sound parameters
+ * @returns {string} Generated sound key
  */
+function generateSoundKey(params) {
+  // Skip the 'SK-' prefix
+  const parts = compactKey.substring(3).split('-');
+  
+  if (parts.length < 3) {
+    throw new Error("Invalid compact key format: too few parts");
+  }
+  
+  // Start with an empty params object
+  const params = {};
+  
+  // Decode sound type
+  const typeMap = {
+    'w': 'wind',
+    'o': 'ocean',
+    'l': 'leaves',
+    'f': 'fire',
+    'fs': 'footsteps',
+    'sy': 'synthesizer',
+    'p': 'percussion',
+    'n': 'noise',
+    'm': 'mechanical',
+    'fm': 'formant',
+    'c': 'custom'
+  };
+  
+  params.soundType = typeMap[parts[0]] || 'custom';
+  
+  let index = 1;
+  
+  // Helper function to decode parameters
+  const decodeParam = (param, multiplier = 100, digits = 2) => {
+    if (index < parts.length - 1) {
+      params[param] = parseInt(parts[index], 10) / multiplier;
+      index++;
+    }
+  };
+  
+  // Decode type-specific parameters
+  switch (params.soundType) {
+    case 'wind':
+      decodeParam('windSpeed', 1, 2);
+      decodeParam('windGustiness');
+      decodeParam('turbulence');
+      break;
+      
+    case 'ocean':
+      decodeParam('waveHeight', 1, 2);
+      decodeParam('waveFrequency');
+      decodeParam('surfIntensity');
+      break;
+      
+    case 'leaves':
+      decodeParam('rustleIntensity');
+      decodeParam('leafDensity', 1, 2);
+      break;
+      
+    case 'fire':
+      decodeParam('fireIntensity');
+      decodeParam('crackleFrequency', 10, 2);
+      decodeParam('crackleIntensity');
+      break;
+      
+    case 'footsteps':
+      decodeParam('footstepVolume');
+      decodeParam('stepFrequency', 1, 3);
+      break;
+      
+    case 'synthesizer':
+      // Decode oscillator type
+      if (index < parts.length - 1) {
+        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
+        params.oscType = oscTypeMap[parts[index]] || 'sine';
+        index++;
+      }
+      decodeParam('oscFrequency', 0.1, 3);
+      decodeParam('harmonic1');
+      decodeParam('harmonic2');
+      break;
+      
+    case 'percussion':
+      decodeParam('impactSharpness');
+      decodeParam('bodyResonance');
+      decodeParam('decayLength');
+      break;
+      
+    case 'noise':
+      // Decode noise color
+      if (index < parts.length - 1) {
+        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
+        params.noiseColor = colorMap[parts[index]] || 'white';
+        index++;
+      }
+      decodeParam('noiseDensity');
+      decodeParam('spectralTilt', 10, 2);
+      break;
+      
+    case 'mechanical':
+      decodeParam('rpm', 0.1, 3);
+      decodeParam('friction');
+      decodeParam('mechanicalLooseness');
+      break;
+      
+    case 'formant':
+      decodeParam('formant1', 0.1, 2);
+      decodeParam('formant2', 0.01, 2);
+      decodeParam('breathiness');
+      decodeParam('vibrato');
+      break;
+      
+    case 'custom':
+      // For custom, we need to guess what parameters to decode
+      // based on the available parts
+      const firstPart = parts[index];
+      
+      // Check if it's an oscillator type
+      if (['i', 'q', 'w', 't', 'c'].includes(firstPart)) {
+        const oscTypeMap = {'i': 'sine', 'q': 'square', 'w': 'sawtooth', 't': 'triangle', 'c': 'custom'};
+        params.oscType = oscTypeMap[firstPart];
+        index++;
+        decodeParam('oscFrequency', 0.1, 3);
+      } else if (['w', 'p', 'b', 'l', 'v', 'g'].includes(firstPart)) {
+        // Noise-like parameters
+        const colorMap = {'w': 'white', 'p': 'pink', 'b': 'brown', 'l': 'blue', 'v': 'violet', 'g': 'grey'};
+        params.noiseColor = colorMap[firstPart];
+        index++;
+        decodeParam('noiseDensity');
+      }
+      break;
+  }
+  
+  // Always decode spatial parameters
+  decodeParam('refDistance', 1, 2);
+  decodeParam('rolloff', 10, 2);
+  
+  // Add reasonable defaults for parameters that might be missing
+  if (params.soundType === 'wind' && !params.windSpeed) params.windSpeed = 40;
+  if (params.soundType === 'ocean' && !params.waveHeight) params.waveHeight = 60;
+  if (params.soundType === 'fire' && !params.fireIntensity) params.fireIntensity = 0.5;
+  if (params.soundType === 'synthesizer' && !params.oscType) params.oscType = 'sine';
+  if (params.soundType === 'noise' && !params.noiseColor) params.noiseColor = 'white';
+  
+  return params;
+}
+
+// The sound generator object
 const SoundGenerator = {
   // Reusable white noise buffer.
   createNoiseBuffer: function(audioCtx, duration) {
@@ -461,7 +609,7 @@ function scheduleEnvelope(gainNode, audioCtx, duration, fadeInFraction, fadeOutF
  * @param {string} soundKey - The sound key
  * @returns {Object} Object containing sound parameters and audio generation function
  */
-export function getNoiseFromKey(soundKey) {
+function getNoiseFromKey(soundKey) {
   let params;
   
   // Check if it's a stored key in our library
@@ -497,7 +645,7 @@ export function getNoiseFromKey(soundKey) {
  * @param {Object} params - Sound parameters
  * @returns {Object} Object containing sound parameters and audio generation function
  */
-export function getNoiseFromParams(params) {
+function getNoiseFromParams(params) {
   // Set default sound type if not provided
   if (!params.soundType) {
     // Try to guess the sound type from the parameters
@@ -532,7 +680,7 @@ export function getNoiseFromParams(params) {
  * @param {number} options.fadeOut - Fade out time as fraction of duration
  * @returns {THREE.PositionalAudio} The Three.js PositionalAudio object
  */
-export function playNoise(noise, options) {
+function playNoise(noise, options) {
   if (!noise || !options.listener || !options.scene) {
     console.error("Missing required parameters for playNoise");
     return null;
@@ -598,8 +746,12 @@ export function playNoise(noise, options) {
   return positionalAudio;
 }
 
-// Add sound key to library for later use
-export function addSoundToLibrary(key, params) {
+/**
+ * Add sound key to library for later use
+ * @param {string} key - The sound key
+ * @param {Object} params - Sound parameters
+ */
+function addSoundToLibrary(key, params) {
   soundLibrary[key] = params;
 }
 
@@ -628,12 +780,13 @@ const initializePresets = function() {
 // Initialize presets
 initializePresets();
 
-// Clean export interface
+// Clean export interface - KEEP ONLY THIS EXPORT
 export {
   getNoiseFromKey,
   getNoiseFromParams,
   playNoise,
   SoundGenerator,
   generateSoundKey, 
-  decodeCompactKey
+  decodeCompactKey,
+  addSoundToLibrary
 };

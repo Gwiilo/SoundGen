@@ -1,36 +1,36 @@
 /**
  * SoundGen Integration Module
- * Minimal import interface for using SoundGen in other projects
+ * Provides a clean interface for using SoundGen in other projects
  */
 
-// Import only what's needed from noise.js
-import { 
-  getNoiseFromKey, 
-  getNoiseFromParams, 
-  playNoise, 
-  generateSoundKey,
-  decodeCompactKey,
-  SoundGenerator
-} from './noise.js';
-
-// Export clean public API
-export {
+import {
   getNoiseFromKey,
   getNoiseFromParams,
   playNoise,
+  SoundGenerator,
   generateSoundKey,
-  decodeCompactKey,
-  SoundGenerator
-};
+  decodeCompactKey
+} from './noise.js';
 
-// Default export for convenience
+// Re-export everything by default for convenience
 export default {
   getNoiseFromKey,
   getNoiseFromParams,
   playNoise,
+  SoundGenerator,
   generateSoundKey,
   decodeCompactKey,
-  SoundGenerator
+  initializeSoundGen
+};
+
+// Also export individual functions for named imports
+export {
+  getNoiseFromKey,
+  getNoiseFromParams,
+  playNoise,
+  SoundGenerator,
+  generateSoundKey,
+  decodeCompactKey
 };
 
 /**
@@ -49,15 +49,18 @@ export function initializeSoundGen(options = {}) {
     generateSoundKey,
     decodeCompactKey,
     
-    // Additional convenience methods
+    // Convenience methods
     createSound: (params) => getNoiseFromParams(params),
     playSound: (params, audioContext) => {
       const noise = getNoiseFromParams(params);
-      if (typeof window !== 'undefined' && window.AudioContext) {
+      if (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) {
         return playNoise(noise, {
           audioContext: audioContext || new (window.AudioContext || window.webkitAudioContext)(),
           duration: options.defaultDuration || 3,
-          volume: options.volume || 1.0
+          volume: options.volume || 1.0,
+          position: options.position || new THREE.Vector3(0, 0, 0),
+          listener: options.listener || audioContext?.listener,
+          scene: options.scene
         });
       } else {
         return { params: noise.params };
