@@ -10,7 +10,7 @@ Add SoundGen as a Git submodule:
 
 ```bash
 # From your project root
-git submodule add https://github.com/yourusername/soundgen.git soundgen
+git submodule add https://github.com/Gwiilo/soundgen.git soundgen
 git submodule update --init --recursive
 ```
 
@@ -27,7 +27,7 @@ If you prefer not to use Git submodules, you can directly download the files:
 ```bash
 # Using curl
 mkdir -p soundgen
-curl -L https://github.com/yourusername/soundgen/archive/main.zip -o soundgen.zip
+curl -L https://github.com/Gwiilo/soundgen/archive/main.zip -o soundgen.zip
 unzip soundgen.zip -d temp
 cp -r temp/soundgen-main/* soundgen/
 rm -rf temp soundgen.zip
