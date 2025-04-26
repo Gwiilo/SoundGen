@@ -787,6 +787,7 @@ function getNoiseFromParams(params) {
  * @param {number} options.fadeOut - Fade out time as fraction of duration
  * @returns {THREE.PositionalAudio} The Three.js PositionalAudio object
  */
+/*
 function playNoise(noise, options) {
   if (!noise || !options.listener || !options.scene) {
     console.error("Missing required parameters for playNoise");
@@ -852,6 +853,7 @@ function playNoise(noise, options) {
   
   return positionalAudio;
 }
+*/
 
 /**
  * Add sound key to library for later use
