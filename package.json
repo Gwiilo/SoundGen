@@ -1,0 +1,26 @@
+{
+  "name": "soundgen",
+  "version": "1.0.0",
+  "main": "noise.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gwiilo/SoundGen.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gwiilo/SoundGen/issues"
+  },
+  "homepage": "https://github.com/Gwiilo/SoundGen#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0"
+  }
+}

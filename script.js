@@ -1,3 +1,6 @@
+// Import functions from noise.js
+import { getNoiseFromKey, getNoiseFromParams, playNoise } from './noise.js';
+
 ///////////////////////////
 // UI Behavior: Show/hide fieldsets and handle parameters
 ///////////////////////////
@@ -521,23 +524,19 @@ function generateSoundKey() {
     }
   });
 
-  const paramString = JSON.stringify(params);
+  // Create the noise object
+  const noise = getNoiseFromParams(params);
   
-  // Generate both formats of keys
-  // 1. Legacy hash format for compatibility
-  const legacyKey = hashString(paramString).toString(16);
-  // 2. New format: Base64 encoded JSON (more universal)
-  const newFormatKey = 'SND:' + btoa(paramString);
-  // 3. New compact format (much shorter)
+  // Generate compact key (using the existing function)
   const compactKey = generateCompactKey(params);
   
   // We'll use the compact format for display
   const keyToUse = compactKey;
   
-  // Store all formats in the library for compatibility
-  soundLibrary[keyToUse] = params;
-  soundLibrary[legacyKey] = params;
-  soundLibrary[newFormatKey] = params;
+  // Store in the library for later use
+  import('./noise.js').then(module => {
+    module.addSoundToLibrary(keyToUse, params);
+  });
   
   document.getElementById("soundKeyDisplay").textContent = keyToUse;
   document.getElementById('playStatus').textContent = "Sound key generated! Click 'Play Sound' to hear it.";
@@ -2540,6 +2539,9 @@ function playSoundFromUI() {
   };
   
   try {
+    // Get noise from key using our new module
+    const noise = getNoiseFromKey(key);
+    
     // Set up audio analysis for visualization
     const audioCtx = audioListener.context;
     
@@ -2559,10 +2561,14 @@ function playSoundFromUI() {
       initializeVisualization();
     }
     
-    // Modified to capture audio for visualization
-    currentlyPlaying = playSoundFromKey(key, orientation, position, options, {
-      mainAnalyser,
-      parameterAnalysers
+    // Use our new module to play the sound
+    currentlyPlaying = playNoise(noise, {
+      position: position,
+      listener: audioListener,
+      scene: scene,
+      duration: duration,
+      fadeIn: 0.2,
+      fadeOut: 0.3
     });
     
     document.getElementById('playStatus').textContent = `Playing ${duration} seconds of sound...`;
