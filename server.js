@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname)));
 
 // Security middleware for JavaScript files to prevent direct access to functions
-app.use('*.js', (req, res, next) => {
+app.use(/\.js$/, (req, res, next) => {
   // Add X-Content-Type-Options to prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
   next();

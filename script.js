@@ -142,7 +142,7 @@ function setupDefaultPresets() {
               oscType: "sawtooth",
               oscFrequency: 80,
               harmonic1: 0.7,
-              harmonic2: 0.4,
+              harmonic2: 4,
               noiseAmount: 0.05,
               filterType: "lowpass",
               filterCutoff: 500,
@@ -383,6 +383,63 @@ function getCachedNoiseBuffer(audioCtx, key, duration) {
 // Map generated sound keys to parameter objects.
 const soundLibrary = {};
 
+/**
+ * Updates the visibility of parameters in the UI based on selection
+ */
+function updateParameterVisibility() {
+  // First hide all parameter inputs
+  document.querySelectorAll('.parameter-control').forEach(control => {
+    control.style.display = 'none';
+  });
+  
+  // Show only selected parameters
+  selectedParameters.forEach(param => {
+    const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
+    if (paramControl) {
+      paramControl.style.display = 'block';
+      
+      // Create visualization canvas if it doesn't exist
+      createParamVisualization(param);
+    }
+  });
+  
+  // Update section visibility
+  document.querySelectorAll('.sound-params').forEach(section => {
+    const sectionId = section.id;
+    const categoryKey = sectionId.replace('Params', '');
+    
+    // Check if any parameter in this section is selected
+    let hasVisibleParams = false;
+    const params = allParameters[categoryKey]?.params;
+    
+    if (params) {
+      Object.keys(params).some(param => {
+        if (selectedParameters.has(param)) {
+          hasVisibleParams = true;
+          return true;
+        }
+        return false;
+      });
+    }
+    
+    // Show section if it has visible parameters
+    if (hasVisibleParams) {
+      section.style.display = 'block';
+      
+      // Ensure the content is visible if section is not collapsed
+      if (!section.classList.contains('collapsed')) {
+        const content = section.querySelector('.collapsible-content');
+        if (content) {
+          content.style.maxHeight = '2000px';
+          content.style.overflow = 'visible';
+        }
+      }
+    } else if (section.style.display !== 'none') {
+      section.style.display = 'none';
+    }
+  });
+}
+
 // Fix loadSoundKey function to ensure all parameters are properly displayed
 function loadSoundKey() {
   const inputKey = document.getElementById('soundKeyInput').value.trim();
@@ -533,7 +590,10 @@ function generateSoundKey() {
   // We'll use the compact format for display
   const keyToUse = compactKey;
   
-  // Store in the library for later use
+  // Store in our local library immediately
+  soundLibrary[keyToUse] = params;
+  
+  // Also store in the noise.js library for later use
   import('./noise.js').then(module => {
     module.addSoundToLibrary(keyToUse, params);
   });
@@ -3344,63 +3404,6 @@ function updateCategoryCheckbox(category, categoryEl) {
 }
 
 /**
- * Updates the visibility of parameters in the UI based on selection
- */
-function updateParameterVisibility() {
-  // First hide all parameter inputs
-  document.querySelectorAll('.parameter-control').forEach(control => {
-    control.style.display = 'none';
-  });
-  
-  // Show only selected parameters
-  selectedParameters.forEach(param => {
-    const paramControl = document.querySelector(`.parameter-control[data-param="${param}"]`);
-    if (paramControl) {
-      paramControl.style.display = 'block';
-      
-      // Create visualization canvas if it doesn't exist
-      createParamVisualization(param);
-    }
-  });
-  
-  // Update section visibility
-  document.querySelectorAll('.sound-params').forEach(section => {
-    const sectionId = section.id;
-    const categoryKey = sectionId.replace('Params', '');
-    
-    // Check if any parameter in this section is selected
-    let hasVisibleParams = false;
-    const params = allParameters[categoryKey]?.params;
-    
-    if (params) {
-      Object.keys(params).some(param => {
-        if (selectedParameters.has(param)) {
-          hasVisibleParams = true;
-          return true;
-        }
-        return false;
-      });
-    }
-    
-    // Show section if it has visible parameters
-    if (hasVisibleParams) {
-      section.style.display = 'block';
-      
-      // Ensure the content is visible if section is not collapsed
-      if (!section.classList.contains('collapsed')) {
-        const content = section.querySelector('.collapsible-content');
-        if (content) {
-          content.style.maxHeight = '2000px';
-          content.style.overflow = 'visible';
-        }
-      }
-    } else if (section.style.display !== 'none') {
-      section.style.display = 'none';
-    }
-  });
-}
-
-/**
  * Checks if a parameter is selected
  * @param {string} paramId - The parameter ID to check
  * @returns {boolean} True if parameter is selected
@@ -3793,13 +3796,6 @@ function initializeDefaultParameters() {
   updateParameterVisibility();
 }
 
-// Replace the old updateSelectedParametersForType function since we're no longer using soundType
-function updateSelectedParametersForType(soundType) {
-  // This function is kept for backward compatibility
-  // But now it should do nothing or redirect to our preset system
-  console.log("Sound type selection is deprecated, using preset system instead");
-}
-
 // Helper function to create WAV from AudioBuffer
 function createWavFromAudioBuffer(audioBuffer) {
   const numChannels = audioBuffer.numberOfChannels;
@@ -3869,211 +3865,237 @@ function downloadSoundFromUI() {
     return;
   }
   
-  // Get parameters from the key - these already contain only selected parameters
-  const params = soundLibrary[key];
+  // Get parameters from the key - check both local library and try to import from noise.js
+  let params = soundLibrary[key];
+  
   if (!params) {
-    alert("Could not find parameters for this sound key.");
+    // Try to fetch from noise.js module as a fallback
+    import('./noise.js').then(module => {
+      try {
+        const noise = module.getNoiseFromKey(key);
+        if (noise && noise.params) {
+          // Save to local library for future use
+          soundLibrary[key] = noise.params;
+          // Proceed with download
+          continueDownload(noise.params);
+        } else {
+          alert("Could not find parameters for this sound key. Please regenerate the sound key.");
+        }
+      } catch (error) {
+        console.error("Error fetching parameters:", error);
+        alert("Error loading sound parameters. Please try regenerating the sound key.");
+      }
+    }).catch(error => {
+      console.error("Failed to load noise.js module:", error);
+      alert("Could not access sound parameters. Please try again.");
+    });
     return;
   }
   
-  // Get duration from slider
-  const duration = parseInt(document.getElementById("playbackDuration").value);
+  // Continue with the download if we have params
+  continueDownload(params);
   
-  // Show user that download is being prepared
-  document.getElementById('playStatus').textContent = "Preparing sound download...";
-  
-  // Create an audio context
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
-  try {
-    // Create buffer based on sound type
-    let buffer;
+  // Helper function to continue download process with parameters
+  function continueDownload(params) {
+    // Get duration from slider
+    const duration = parseInt(document.getElementById("playbackDuration").value);
     
-    switch (params.soundType) {
-      case "wind":
-        buffer = SoundGenerator.createWindBuffer(audioCtx, params);
-        break;
-      case "ocean":
-        buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
-        break;
-      case "leaves":
-        buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
-        break;
-      case "fire":
-        buffer = SoundGenerator.createFireBuffer(audioCtx, params);
-        break;
-      case "footsteps":
-        buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
-        break;
-      case "synthesizer":
-        buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
-        break;
-      case "percussion":
-        buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
-        break;
-      case "noise":
-        buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
-        break;
-      case "mechanical":
-        buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
-        break;
-      case "formant":
-        buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
-        break;
-      case "environmental":
-        buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
-        break;
-      case "layered":
-        buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
-        break;
-      case "custom":
-        // For custom, determine which buffer to use based on parameters
-        // For layered sounds, check if there's a soundLayers property
-        if (params.soundLayers) {
-          buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
-        } else if (params.environment) {
-          buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
-        } else if (params.oscType !== undefined) {
-          buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
-        } else if (params.impactSharpness !== undefined) {
-          buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
-        } else if (params.noiseColor !== undefined) {
-          buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
-        } else if (params.rpm !== undefined) {
-          buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
-        } else if (params.formant1 !== undefined) {
-          buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
-        } else if (params.windSpeed !== undefined) {
+    // Show user that download is being prepared
+    document.getElementById('playStatus').textContent = "Preparing sound download...";
+    
+    // Create an audio context
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    try {
+      // Create buffer based on sound type
+      let buffer;
+      
+      switch (params.soundType) {
+        case "wind":
           buffer = SoundGenerator.createWindBuffer(audioCtx, params);
-        } else if (params.waveHeight !== undefined) {
+          break;
+        case "ocean":
           buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
-        } else if (params.rustleIntensity !== undefined) {
+          break;
+        case "leaves":
           buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
-        } else if (params.fireIntensity !== undefined) {
+          break;
+        case "fire":
           buffer = SoundGenerator.createFireBuffer(audioCtx, params);
-        } else if (params.footstepVolume !== undefined || params.stepSurface !== undefined) {
+          break;
+        case "footsteps":
           buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
-        } else {
+          break;
+        case "synthesizer":
+          buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+          break;
+        case "percussion":
+          buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+          break;
+        case "noise":
+          buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+          break;
+        case "mechanical":
+          buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+          break;
+        case "formant":
+          buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+          break;
+        case "environmental":
+          buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
+          break;
+        case "layered":
+          buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
+          break;
+        case "custom":
+          // For custom, determine which buffer to use based on parameters
+          // For layered sounds, check if there's a soundLayers property
+          if (params.soundLayers) {
+            buffer = SoundGenerator.createLayeredSoundBuffer(audioCtx, params);
+          } else if (params.environment) {
+            buffer = SoundGenerator.createEnvironmentalSound(audioCtx, params);
+          } else if (params.oscType !== undefined) {
+            buffer = SoundGenerator.createSynthBuffer(audioCtx, params);
+          } else if (params.impactSharpness !== undefined) {
+            buffer = SoundGenerator.createPercussionBuffer(audioCtx, params);
+          } else if (params.noiseColor !== undefined) {
+            buffer = SoundGenerator.createColoredNoiseBuffer(audioCtx, params);
+          } else if (params.rpm !== undefined) {
+            buffer = SoundGenerator.createMechanicalBuffer(audioCtx, params);
+          } else if (params.formant1 !== undefined) {
+            buffer = SoundGenerator.createFormantBuffer(audioCtx, params);
+          } else if (params.windSpeed !== undefined) {
+            buffer = SoundGenerator.createWindBuffer(audioCtx, params);
+          } else if (params.waveHeight !== undefined) {
+            buffer = SoundGenerator.createOceanBuffer(audioCtx, params);
+          } else if (params.rustleIntensity !== undefined) {
+            buffer = SoundGenerator.createLeavesBuffer(audioCtx, params);
+          } else if (params.fireIntensity !== undefined) {
+            buffer = SoundGenerator.createFireBuffer(audioCtx, params);
+          } else if (params.footstepVolume !== undefined || params.stepSurface !== undefined) {
+            buffer = SoundGenerator.createFootstepsBuffer(audioCtx, params);
+          } else {
+            buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
+          }
+          break;
+        default:
           buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
-        }
-        break;
-      default:
-        buffer = SoundGenerator.createNoiseBuffer(audioCtx, duration);
-    }
-    
-    if (!buffer) {
-      throw new Error("Could not create audio buffer");
-    }
-    
-    // IMPROVED: Create a longer buffer if needed for ALL sound types
-    // This ensures the downloaded sound will have the full requested duration
-    let needsExtension = buffer.duration < duration;
-    let needsRendering = false;
-    
-    if (needsExtension) {
-      // Create a new buffer with the exact requested duration
-      const newBuffer = audioCtx.createBuffer(
-        buffer.numberOfChannels,
-        Math.ceil(audioCtx.sampleRate * duration),
-        audioCtx.sampleRate
-      );
-      
-      // Loop the original buffer into the new one
-      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        const newData = newBuffer.getChannelData(channel);
-        const originalData = buffer.getChannelData(channel);
-        const originalLength = originalData.length;
-        
-        if (originalLength === 0) continue;
-        
-        // Properly loop the original data to fill the new buffer
-        let srcPosition = 0;
-        for (let i = 0; i < newData.length; i++) {
-          // Better looping logic with smoother transitions
-          newData[i] = originalData[srcPosition];
-          srcPosition = (srcPosition + 1) % originalLength;
-        }
       }
       
-      buffer = newBuffer;
-    }
-    
-    // Apply basic audio processing if needed
-    if (params.soundType === "wind" && params.windSpeed !== undefined) {
-      // ... existing wind processing code ...
-      needsRendering = true;
-    }
-    
-    // Define the finish download function
-    function finishDownload() {
-      // Convert the buffer to WAV format
-      const wavBuffer = createWavFromAudioBuffer(buffer);
+      if (!buffer) {
+        throw new Error("Could not create audio buffer");
+      }
       
-      // Create a Blob and download link
-      const blob = new Blob([wavBuffer], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
+      // IMPROVED: Create a longer buffer if needed for ALL sound types
+      // This ensures the downloaded sound will have the full requested duration
+      let needsExtension = buffer.duration < duration;
+      let needsRendering = false;
       
-      // Create filename in the requested format: "noise [sound key].wav"
-      const filename = `noise ${key}.wav`;
+      if (needsExtension) {
+        // Create a new buffer with the exact requested duration
+        const newBuffer = audioCtx.createBuffer(
+          buffer.numberOfChannels,
+          Math.ceil(audioCtx.sampleRate * duration),
+          audioCtx.sampleRate
+        );
+        
+        // Loop the original buffer into the new one
+        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+          const newData = newBuffer.getChannelData(channel);
+          const originalData = buffer.getChannelData(channel);
+          const originalLength = originalData.length;
+          
+          if (originalLength === 0) continue;
+          
+          // Properly loop the original data to fill the new buffer
+          let srcPosition = 0;
+          for (let i = 0; i < newData.length; i++) {
+            // Better looping logic with smoother transitions
+            newData[i] = originalData[srcPosition];
+            srcPosition = (srcPosition + 1) % originalLength;
+          }
+        }
+        
+        buffer = newBuffer;
+      }
       
-      // Create and trigger a download link
-      const downloadLink = document.createElement("a");
-      downloadLink.href = url;
-      downloadLink.download = filename;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      audioCtx.close();
-      
-      document.getElementById('playStatus').textContent = "Sound downloaded successfully!";
-    }
-    
-    if (needsRendering) {
-      // For sounds that need processing, use an offline audio context
-      const offlineCtx = new OfflineAudioContext(
-        buffer.numberOfChannels,
-        buffer.length,
-        buffer.sampleRate
-      );
-      
-      const offlineSource = offlineCtx.createBufferSource();
-      offlineSource.buffer = buffer;
-      
-      // Apply effects specific to the sound type
+      // Apply basic audio processing if needed
       if (params.soundType === "wind" && params.windSpeed !== undefined) {
-        const filter = offlineCtx.createBiquadFilter();
-        filter.type = "bandpass";
-        let cutoff = 200 + (params.windSpeed / 100) * 1800;
-        filter.frequency.value = cutoff;
-        
-        offlineSource.connect(filter);
-        filter.connect(offlineCtx.destination);
-      } else {
-        offlineSource.connect(offlineCtx.destination);
+        // ... existing wind processing code ...
+        needsRendering = true;
       }
       
-      offlineSource.start();
+      // Define the finish download function
+      function finishDownload() {
+        // Convert the buffer to WAV format
+        const wavBuffer = createWavFromAudioBuffer(buffer);
+        
+        // Create a Blob and download link
+        const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create filename in the requested format: "noise [sound key].wav"
+        const filename = `noise ${key}.wav`;
+        
+        // Create and trigger a download link
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up
+        URL.revokeObjectURL(url);
+        audioCtx.close();
+        
+        document.getElementById('playStatus').textContent = "Sound downloaded successfully!";
+      }
       
-      // Render and use the processed buffer
-      offlineCtx.startRendering().then(processedBuffer => {
-        buffer = processedBuffer;
+      if (needsRendering) {
+        // For sounds that need processing, use an offline audio context
+        const offlineCtx = new OfflineAudioContext(
+          buffer.numberOfChannels,
+          buffer.length,
+          buffer.sampleRate
+        );
+        
+        const offlineSource = offlineCtx.createBufferSource();
+        offlineSource.buffer = buffer;
+        
+        // Apply effects specific to the sound type
+        if (params.soundType === "wind" && params.windSpeed !== undefined) {
+          const filter = offlineCtx.createBiquadFilter();
+          filter.type = "bandpass";
+          let cutoff = 200 + (params.windSpeed / 100) * 1800;
+          filter.frequency.value = cutoff;
+          
+          offlineSource.connect(filter);
+          filter.connect(offlineCtx.destination);
+        } else {
+          offlineSource.connect(offlineCtx.destination);
+        }
+        
+        offlineSource.start();
+        
+        // Render and use the processed buffer
+        offlineCtx.startRendering().then(processedBuffer => {
+          buffer = processedBuffer;
+          finishDownload();
+        }).catch(err => {
+          console.error("Rendering failed:", err);
+          // Fallback to unprocessed buffer
+          finishDownload();
+        });
+      } else {
+        // For sounds that don't need processing, proceed directly
         finishDownload();
-      }).catch(err => {
-        console.error("Rendering failed:", err);
-        // Fallback to unprocessed buffer
-        finishDownload();
-      });
-    } else {
-      // For sounds that don't need processing, proceed directly
-      finishDownload();
+      }
+    } catch (error) {
+      console.error("Error generating sound for download:", error);
+      document.getElementById('playStatus').textContent = "Error generating sound for download.";
+      audioCtx.close();
     }
-  } catch (error) {
-    console.error("Error generating sound for download:", error);
-    document.getElementById('playStatus').textContent = "Error generating sound for download.";
-    audioCtx.close();
   }
 }
 
@@ -4389,6 +4411,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+/*
 // Update parameter visibility to include visualization creation
 function updateParameterVisibility() {
   // First hide all parameter inputs
@@ -4444,4 +4467,14 @@ function updateParameterVisibility() {
   });
 }
 
-// ...existing code...
+*/
+
+// Make key functions available globally for event handlers
+window.generateSoundKey = generateSoundKey;
+window.loadSoundKey = loadSoundKey;
+window.playSoundFromUI = playSoundFromUI;
+window.downloadSoundFromUI = downloadSoundFromUI;
+window.randomizeParameters = randomizeParameters;
+window.showSavePresetModal = showSavePresetModal;
+window.updateDurationDisplay = updateDurationDisplay;
+window.updateParamOutput = updateParamOutput;

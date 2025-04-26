@@ -24,7 +24,7 @@
           <label for="soundKeyInput">Sound Key:</label>
           <div class="input-group">
             <input type="text" id="soundKeyInput" placeholder="Enter sound key...">
-            <button type="button" id="loadKeyButton" onclick="loadSoundKey()">Load</button>
+            <button type="button" id="loadKeyButton">Load</button>
           </div>
         </div>
         
@@ -65,8 +65,8 @@
             </div>
             
             <div class="preset-actions">
-              <button type="button" id="randomizeBtn" class="secondary-btn" onclick="randomizeParameters()">Randomize Parameters</button>
-              <button type="button" id="savePresetBtn" class="secondary-btn" onclick="showSavePresetModal()">Save Current as Preset</button>
+              <button type="button" id="randomizeBtn" class="secondary-btn">Randomize Parameters</button>
+              <button type="button" id="savePresetBtn" class="secondary-btn">Save Current as Preset</button>
             </div>
           </fieldset>
 
@@ -718,10 +718,10 @@
       <!-- Fixed bottom section -->
       <div class="panel-footer">
         <div class="action-buttons">
-          <button type="button" class="primary-btn" onclick="generateSoundKey()">Generate Sound Key</button>
+          <button type="button" id="generateKeyBtn" class="primary-btn">Generate Sound Key</button>
           <div class="play-download-group">
-            <button type="button" class="play-btn" onclick="playSoundFromUI()"><span>Play Sound</span></button>
-            <button type="button" class="download-btn" onclick="downloadSoundFromUI()" title="Download Sound">↓</button>
+            <button type="button" class="play-btn" id="playBtn"><span>Play Sound</span></button>
+            <button type="button" class="download-btn" id="downloadBtn" title="Download Sound">↓</button>
           </div>
         </div>
 
@@ -733,7 +733,7 @@
         
         <div id="durationControl">
           <label for="playbackDuration">Playback Duration: <span id="durationValue">5</span> seconds</label>
-          <input type="range" id="playbackDuration" min="1" max="60" value="5" class="slider" oninput="updateDurationDisplay(this.value)">
+          <input type="range" id="playbackDuration" min="1" max="60" value="5" class="slider">
         </div>
       </div>
     </div>
@@ -745,5 +745,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Use type="module" to allow imports -->
     <script type="module" src="script.js"></script>
+    <!-- Load event handlers after main script -->
+    <script src="event-handlers.js"></script>
   </body>
 </html>
