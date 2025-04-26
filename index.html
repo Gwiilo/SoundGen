@@ -77,9 +77,13 @@
               <legend class="collapse-toggle">Wind Parameters <span class="collapse-icon">▼</span></legend>
               <div class="collapsible-content">
                 <label for="windSpeed">Wind Speed (0–100):</label>
-                <input type="number" id="windSpeed" name="windSpeed" min="0" max="100" value="40">
+                <input type="range" id="windSpeed" name="windSpeed" min="0" max="100" value="40" class="slider" oninput="updateParamOutput('windSpeed')">
+                <span class="param-value" id="windSpeedOutput">40</span>
+                
                 <label for="windGustiness">Gustiness (0.0–1.0):</label>
-                <input type="number" id="windGustiness" name="windGustiness" step="0.1" min="0" max="1" value="0.5">
+                <input type="range" id="windGustiness" name="windGustiness" step="0.1" min="0" max="1" value="0.5" class="slider" oninput="updateParamOutput('windGustiness')">
+                <span class="param-value" id="windGustinessOutput">0.5</span>
+                
                 <label for="windDirection">Wind Direction:</label>
                 <select id="windDirection" name="windDirection">
                   <option value="N">North</option>
@@ -91,8 +95,11 @@
                   <option value="W">West</option>
                   <option value="NW">North-West</option>
                 </select>
+                
                 <label for="turbulence">Turbulence (0.0–1.0):</label>
-                <input type="number" id="turbulence" name="turbulence" step="0.1" min="0" max="1" value="0.3">
+                <input type="range" id="turbulence" name="turbulence" step="0.1" min="0" max="1" value="0.3" class="slider" oninput="updateParamOutput('turbulence')">
+                <span class="param-value" id="turbulenceOutput">0.3</span>
+                
                 <label for="groundMaterial">Ground Material:</label>
                 <select id="groundMaterial" name="groundMaterial">
                   <option value="grass">Grass</option>

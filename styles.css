@@ -997,3 +997,55 @@ option {
 .collapsible-content {
   overflow-y: visible;
 }
+
+/* Add specific styles to ensure collapsible sections work */
+.collapsible-section {
+  display: block !important;
+}
+
+.collapsible-section .collapse-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.collapsible-section .collapse-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+
+.collapsible-section.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.collapsible-section.collapsed .collapsible-content {
+  max-height: 0 !important;
+  opacity: 0;
+  overflow: hidden !important;
+}
+
+/* Fix for visualization canvases in collapsed sections */
+.collapsible-section:not(.collapsed) .collapsible-content {
+  max-height: 2000px !important; 
+  overflow: visible !important;
+}
+
+/* Add styles for parameter values in wind section */
+#windParams .param-value {
+  display: inline-block;
+  min-width: 30px;
+  text-align: right;
+  margin-left: 8px;
+}

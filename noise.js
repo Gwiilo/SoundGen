@@ -627,6 +627,80 @@ function getNoiseFromKey(soundKey) {
 }
 
 /**
+ * Play a noise from a noise object with the specified options
+ * @param {Object} noise - The noise object with params and createBuffer
+ * @param {Object} options - Playback options
+ * @returns {Object} Audio control object
+ */
+function playNoise(noise, options = {}) {
+  const audioCtx = options.listener ? options.listener.context : new (window.AudioContext || window.webkitAudioContext)();
+  const buffer = noise.createBuffer(audioCtx);
+  
+  // Create audio nodes
+  const source = audioCtx.createBufferSource();
+  const gainNode = audioCtx.createGain();
+  
+  // Set buffer and connect
+  source.buffer = buffer;
+  source.connect(gainNode);
+  
+  // Handle duration and looping
+  const duration = options.duration || 3; // Default to 3 seconds if not specified
+  console.log("In playNoise: setting duration to", duration);
+  
+  // If buffer is shorter than desired duration, enable looping
+  if (buffer.duration < duration) {
+    source.loop = true;
+  }
+  
+  // Schedule envelope for the specified duration
+  scheduleEnvelope(gainNode, audioCtx, duration, options.fadeIn, options.fadeOut);
+  
+  // Connect to destination or positional audio
+  if (options.position && options.listener && options.scene) {
+    // Create positional audio
+    const audioObj = new THREE.Object3D();
+    audioObj.position.copy(options.position);
+    options.scene.add(audioObj);
+    
+    const positionalAudio = new THREE.PositionalAudio(options.listener);
+    positionalAudio.setBuffer(buffer);
+    positionalAudio.setRefDistance(noise.params.refDistance || 5);
+    positionalAudio.setRolloffFactor(noise.params.rolloff || 1);
+    
+    // Connect gain node to positional audio
+    gainNode.connect(positionalAudio.gain.gain);
+    
+    positionalAudio.play();
+    
+    // Cleanup after duration
+    setTimeout(() => {
+      if (positionalAudio.isPlaying) {
+        positionalAudio.stop();
+      }
+      options.scene.remove(audioObj);
+    }, duration * 1000);
+    
+    return positionalAudio;
+  } else {
+    // Connect to regular destination
+    gainNode.connect(audioCtx.destination);
+    source.start(0);
+    
+    // Stop after duration
+    setTimeout(() => {
+      source.stop();
+    }, duration * 1000);
+    
+    return {
+      stop: function() {
+        source.stop();
+      }
+    };
+  }
+}
+
+/**
  * Get a sound buffer from parameters
  * @param {Object} params - Sound parameters
  * @returns {Object} Object containing sound parameters and audio generation function

@@ -615,6 +615,27 @@ async function generateSoundKey() {
   }
 }
 
+/**
+ * Generates a sound key using local implementation instead of Firebase
+ * @param {Object} params - Sound parameters
+ * @returns {Promise<string>} A promise that resolves to the generated sound key
+ */
+async function callGenerateSoundKey(params) {
+  // Check if we should use a local implementation
+  try {
+    // First try to use a local noise.js module's generateSoundKey function
+    const noiseModule = await import('./noise.js');
+    if (noiseModule && noiseModule.generateSoundKey) {
+      return noiseModule.generateSoundKey(params);
+    }
+  } catch (error) {
+    console.log("Falling back to compact key generation", error);
+  }
+  
+  // Fallback to our own compact key generation
+  return generateCompactKey(params);
+}
+
 // Also update the compact key generation function to only include selected parameters
 /**
  * Generates a compact key from sound parameters
@@ -4478,3 +4499,48 @@ window.randomizeParameters = randomizeParameters;
 window.showSavePresetModal = showSavePresetModal;
 window.updateDurationDisplay = updateDurationDisplay;
 window.updateParamOutput = updateParamOutput;
+
+/**
+ * Gets noise data from a sound key
+ * @param {string} key - The sound key to get noise from
+ * @returns {Promise<Object>} A promise that resolves to the noise data
+ */
+async function callGetNoiseFromKey(key) {
+  // First try to use a local noise.js module's getNoiseFromKey function
+  try {
+    const noiseModule = await import('./noise.js');
+    if (noiseModule && noiseModule.getNoiseFromKey) {
+      return noiseModule.getNoiseFromKey(key);
+    }
+  } catch (error) {
+    console.log("Falling back to local noise generation", error);
+  }
+  
+  // Fallback to local implementation
+  // If sound key is in our library, use those parameters
+  if (soundLibrary[key]) {
+    return {
+      params: soundLibrary[key],
+      key: key
+    };
+  } 
+  
+  // Try to decode the key
+  try {
+    if (key.startsWith('SK-')) {
+      const params = decodeCompactKey(key);
+      return {
+        params: params,
+        key: key
+      };
+    } else {
+      throw new Error("Unknown key format");
+    }
+  } catch (error) {
+    console.error("Failed to decode key:", error);
+    throw new Error("Could not get noise from this key");
+  }
+}
+
+// Add to the window object for event handlers
+window.callGetNoiseFromKey = callGetNoiseFromKey;
